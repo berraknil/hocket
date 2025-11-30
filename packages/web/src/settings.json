@@ -1,0 +1,68 @@
+{
+  "knownTargets": [
+    "foxdot",
+    "hydra",
+    "mercury-web",
+    "mercury",
+    "punctual",
+    "renardo",
+    "sardine",
+    "sclang",
+    "strudel",
+    "mondo-strudel",
+    "textmode",
+    "tidal",
+    "dummy"
+  ],
+  "defaultTarget": "hydra",
+  "langByTarget": {
+    "foxdot": "python",
+    "hydra": "javascript",
+    "mercury-web": "javascript",
+    "mercury": "javascript",
+    "punctual": "punctual",
+    "renardo": "python",
+    "sardine": "python",
+    "sclang": "javascript",
+    "strudel": "javascript",
+    "mondo-strudel": "javascript",
+    "textmode": "javascript",
+    "tidal": "tidal",
+    "dummy": "none"
+  },
+  "targetsWithDocumentEvalMode": [
+    "mercury-web",
+    "mercury",
+    "punctual",
+    "strudel",
+    "mondo-strudel",
+    "textmode"
+  ],
+  "panicCodes": {
+    "tidal": "hush",
+    "sclang": "CmdPeriod.run",
+    "remote_sclang": "CmdPeriod.run",
+    "foxdot": "Clock.clear()",
+    "renardo": "Clock.clear()",
+    "mercury": "silence",
+    "mercury-web": "silence",
+    "hydra": "hush()",
+    "strudel": "silence",
+    "mondo-strudel": "hush",
+    "textmode": "t.clear()",
+    "sardine": "panic()",
+    "dummy": "silence"
+  },
+  "noAutoIndent": ["mercury", "mercury-web"],
+  "noLineEval": ["mercury", "mercury-web"],
+  "webTargets": [
+    "hydra",
+    "mercury-web",
+    "punctual",
+    "strudel",
+    "mondo-strudel",
+    "textmode"
+  ],
+  "repoUrl": "https://codeberg.org/munshkr/flok",
+  "changeLogUrl": "https://codeberg.org/munshkr/flok/src/branch/main/CHANGELOG.md"
+}

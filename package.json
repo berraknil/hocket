@@ -1,0 +1,38 @@
+{
+  "name": "hocket",
+  "description": "Live coding editor with ATproto sketch persistence",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/hocket.git"
+  },
+  "scripts": {
+    "build": "lerna run build",
+    "check": "lerna run check",
+    "lint": "lerna run lint",
+    "format": "lerna run format"
+  },
+  "keywords": [
+    "codemirror",
+    "webrtc",
+    "websockets",
+    "live-coding",
+    "collaborative-editing"
+  ],
+  "author": "Damián Silvani <munshkr@gmail.com>",
+  "license": "GPL-3.0+",
+  "bugs": {
+    "url": "https://codeberg.org/munshkr/flok/issues"
+  },
+  "homepage": "https://codeberg.org/munshkr/flok#readme",
+  "devDependencies": {
+    "lerna": "^6.5.1"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "@atproto/api": "^0.18.3",
+    "react-rnd": "^10.4.1"
+  }
+}
