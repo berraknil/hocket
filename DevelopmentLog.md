@@ -1,5 +1,42 @@
 # Development Log
 
+## 2025-11-30: Fix Sketch Loading Race Condition
+
+### Problem
+When opening a saved sketch from the dashboard, the sketch content would be empty or contain default sample code instead of the saved content. This happened because:
+
+1. The Flok session initialization (`initializeSession`) was racing with sketch loading from PDS
+2. `initializeSession` would set default sample code before `loadSketch` could set the actual sketch content
+3. The sketch loading didn't wait for the session WebSocket to be fully synced
+
+### Root Cause
+The session page has multiple competing effects:
+- Session creation → triggers Y.js sync → calls `initializeSession()`  
+- Sketch loading → fetches from PDS → tries to set document content
+
+These were not coordinated, leading to `initializeSession` overwriting sketch content with defaults.
+
+### Solution
+1. Added `sessionSynced` state to track when WebSocket sync is complete
+2. Added `sketchLoadedRef` to prevent double-loading
+3. Modified `initializeSession` to check for `?sketch=` URL param and skip default code if present
+4. Modified sketch loading effect to wait for `sessionSynced` before setting content
+5. Added cleanup to reset refs when session changes
+
+### Files Modified
+- `packages/web/src/routes/session.tsx`:
+  - Added `sessionSynced` state and `sketchLoadedRef` ref
+  - Modified `initializeSession()` to detect sketch loading mode
+  - Modified sketch loading effect to depend on `sessionSynced`
+  - Added proper cleanup in session useEffect
+
+### Testing
+- Build passes
+- TypeScript check passes
+- Session page tests pass (11/17, remaining failures are pre-existing mock auth issues)
+
+---
+
 ## 2024-11-29: Share Permissions Feature
 
 ### What was done
