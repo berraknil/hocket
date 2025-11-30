@@ -149,10 +149,16 @@ function SessionContent() {
   const [currentSketchUri, setCurrentSketchUri] = useState<string | null>(null);
   const [currentSketchName, setCurrentSketchName] = useState<string>("");
 
+  // Track if sketch content has been loaded from PDS (to prevent auto-save race)
+  const sketchLoadedRef = useRef(false);
+
   // Auto-save tracking refs
   const autoSaveInitialized = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedContentRef = useRef<string>("");
+
+  // Track if session sync is complete
+  const [sessionSynced, setSessionSynced] = useState(false);
 
   // Editor settings: Try to restore from local storage or use default settings
   const [editorSettings, setEditorSettings] = useState<EditorSettings>(() => {
@@ -248,18 +254,28 @@ function SessionContent() {
   }, [query, isAuthenticated, authLoading, navigate, toast]);
 
   // Load sketch from URL parameter if present (only for authenticated users)
+  // Wait for session to be synced to avoid race conditions with initializeSession
   useEffect(() => {
     const sketchUri = query.get("sketch");
-    // Wait for authentication and agent to be ready, and for the Flok session to exist
-    if (!sketchUri || !isAuthenticated || !agent || !session) return;
+    // Wait for authentication, agent, Flok session, and sync to be ready
+    if (!sketchUri || !isAuthenticated || !agent || !session || !sessionSynced)
+      return;
+
+    // Prevent double-loading
+    if (sketchLoadedRef.current) return;
+    sketchLoadedRef.current = true;
 
     const loadSketch = async () => {
       try {
+        console.log("Loading sketch from PDS:", sketchUri);
         const record = await getSketch(agent, sketchUri);
         const sketchData = record.value as SketchRecord;
 
         setCurrentSketchUri(sketchUri);
         setCurrentSketchName(sketchData.name);
+
+        // Mark auto-save as initialized since we're loading an existing sketch
+        autoSaveInitialized.current = true;
 
         // Check if sketch has panes array (new format) or content string (old format)
         if (sketchData.panes && sketchData.panes.length > 0) {
@@ -267,6 +283,8 @@ function SessionContent() {
           const sortedPanes = [...sketchData.panes].sort(
             (a, b) => (a.order ?? 0) - (b.order ?? 0),
           );
+
+          console.log("Setting sketch panes:", sortedPanes);
 
           // Set active documents with targets from sketch
           session.setActiveDocuments(
@@ -277,14 +295,24 @@ function SessionContent() {
           );
 
           // Wait for Yjs to create documents, then set content
+          // Use a longer delay to ensure documents are ready
           setTimeout(() => {
             const docs = session.getDocuments();
+            console.log(
+              "Setting content for",
+              docs.length,
+              "documents from sketch",
+            );
             sortedPanes.forEach((pane, i) => {
               if (docs[i]) {
                 docs[i].content = pane.content;
+                console.log(`Set pane ${i} (${pane.target}) content`);
               }
             });
-          }, 150);
+
+            // Update last saved content to prevent immediate auto-save
+            lastSavedContentRef.current = JSON.stringify(sortedPanes);
+          }, 200);
         }
 
         toast({
@@ -294,6 +322,7 @@ function SessionContent() {
         });
       } catch (error) {
         console.error("Failed to load sketch:", error);
+        sketchLoadedRef.current = false; // Allow retry on error
         toast({
           variant: "destructive",
           title: "Failed to load sketch",
@@ -303,7 +332,7 @@ function SessionContent() {
     };
 
     loadSketch();
-  }, [query, agent, session, isAuthenticated, toast]);
+  }, [query, agent, session, sessionSynced, isAuthenticated, toast]);
 
   // Block access to shared sessions (via URL hash with code) for unauthenticated users
   useEffect(() => {
@@ -342,12 +371,31 @@ function SessionContent() {
     // Track if session has been initialized to prevent duplicate initialization
     let sessionInitialized = false;
 
+    // Check if we're loading from a sketch URL parameter
+    // In this case, we should NOT set default sample code
+    const isLoadingFromSketch = !!new URLSearchParams(
+      window.location.search,
+    ).get("sketch");
+
     const initializeSession = () => {
       if (sessionInitialized) {
         console.log("Session already initialized, skipping");
         return;
       }
       sessionInitialized = true;
+
+      // If loading from sketch parameter, only set up document structure, not content
+      // The sketch loading effect will set the content
+      if (isLoadingFromSketch) {
+        console.log(
+          "Loading from sketch parameter, skipping default code initialization",
+        );
+        // If session is empty, just set default targets without content
+        if (newSession.getDocuments().length === 0) {
+          setActiveDocuments(newSession, defaultTargets);
+        }
+        return;
+      }
 
       // If session is empty, set targets from hash parameter if present.
       // Otherwise, use default targets (strudel + hydra).
@@ -408,6 +456,11 @@ function SessionContent() {
       setSyncState(newSession.wsConnected ? "synced" : "partiallySynced");
       console.log("Synced with protocol:", protocol);
 
+      // Mark session as synced so sketch loading can proceed
+      if (protocol === "websocket") {
+        setSessionSynced(true);
+      }
+
       // Only initialize after WebSocket sync to get authoritative server state
       // This prevents duplication when joining existing sessions
       if (protocol === "websocket") {
@@ -426,6 +479,7 @@ function SessionContent() {
           console.log(
             "WebSocket connected but no documents, initializing new session",
           );
+          setSessionSynced(true);
           initializeSession();
         }
       }, 500);
@@ -530,7 +584,12 @@ function SessionContent() {
       }
     }
 
-    return () => newSession.destroy();
+    return () => {
+      newSession.destroy();
+      // Reset state for potential re-initialization
+      setSessionSynced(false);
+      sketchLoadedRef.current = false;
+    };
   }, [name]);
 
   useEffect(() => {
