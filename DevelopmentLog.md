@@ -1,5 +1,74 @@
 # Development Log
 
+## 2025-11-30: Sketch Ownership and Fork Permissions
+
+### Problem
+Need a permission system for collaborative sketches where:
+- Sketches have a single owner (the creator)
+- Collaborators can save their own version (fork) without affecting owner's version
+- Owner's PDS is source of truth for their sketch
+- Forks are independent - if owner deletes, forks remain
+
+### Solution
+
+#### Schema Changes
+Added ownership fields to `SketchRecord`:
+- `ownerDid: string` - DID of original creator (immutable)
+- `ownerHandle: string` - Handle at creation time (for display)
+- `role: "owner" | "editor"` - This record holder's role
+- `forkedFrom?: string` - URI of original sketch (if fork)
+
+#### Behavior Matrix
+| Action | Owner | Editor (Fork) |
+|--------|-------|---------------|
+| Create sketch | Sets `role: "owner"`, `ownerDid: self` | N/A |
+| Join via link | N/A | Can edit via Y.js |
+| Save | Updates own PDS record | Creates fork with `role: "editor"` |
+| Delete | Deletes from PDS | Deletes own fork only |
+| Dashboard | Crown icon | Fork icon + "Forked from @handle" |
+
+#### Fork Flow
+1. User A creates sketch → `role: "owner"`, `ownerDid: A`
+2. User A shares link → `?sketch=at://A/cc.hocket.sketch/xyz`
+3. User B joins, edits via Y.js real-time
+4. User B clicks Save → creates NEW record on B's PDS:
+   - `role: "editor"`
+   - `forkedFrom: at://A/cc.hocket.sketch/xyz`
+   - `name: "Fork of [original name]"`
+
+### Files Modified
+- `packages/web/src/lib/sketch-schema.ts`: Added ownership fields
+- `packages/web/src/lib/atproto.ts`: Include ownership in create/update
+- `packages/web/src/routes/session.tsx`: Detect non-owner, create fork on save
+- `packages/web/src/contexts/sketch-context.tsx`: Pass owner fields
+- `packages/web/src/components/sketch/sketch-card.tsx`: Show crown/fork icons
+
+### Testing
+- Build passes ✅
+- TypeScript check passes ✅
+- 125/150 E2E tests pass (failures are pre-existing mock auth issues)
+
+---
+
+## 2025-11-30: Manual Save Button
+
+### Problem
+Auto-save has 3-second debounce. Users want immediate save without waiting.
+
+### Solution
+Added floating "Save" button in bottom right of session editor.
+
+### Features
+- Shows three states: idle (save icon), saving (spinner), saved (checkmark)
+- Triggers immediate save to PDS
+- Clears any pending auto-save timeout
+- Toast notification on save
+
+### Files Modified
+- `packages/web/src/routes/session.tsx`: Added `saveNow` function and Save button UI
+
+---
+
 ## 2025-11-30: Session Name Persistence for Sketches
 
 ### Problem
