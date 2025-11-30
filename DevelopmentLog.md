@@ -27,3 +27,59 @@ Implemented authentication requirements for sharing and joining shared sessions.
 - `session-commands.spec.ts:198` - should show sign-in prompt when not authenticated
 - `collaboration.spec.ts:180` - should require authentication to share session URL
 - `collaboration.spec.ts:197` - should redirect to sign-in when loading shared session without auth
+
+---
+
+## 2025-11-30: Multi-Pane Sketch Save/Load with ATProto Lexicon
+
+### What was done
+Fixed sketch save/load functionality to properly preserve multi-pane structure when saving to and loading from ATProto (user's PDS).
+
+### Problem
+Previously, sketches were saved by combining all pane contents into a single string with text markers (`// Target: strudel\n...`). When loaded, everything was dumped into the first pane only, losing the multi-pane structure.
+
+### Solution
+Changed sketch record format to store panes as a structured array with target, content, and order for each pane.
+
+### Files created
+- `packages/web/src/lexicons/cc/hocket/sketch.json` - ATProto lexicon schema defining:
+  - `name` - sketch name (required)
+  - `description` - optional description
+  - `panes[]` - array of code panes with target, content, order (required)
+  - `tags[]` - optional categorization tags
+  - `visibility` - public/private (default: public)
+  - `createdAt` / `updatedAt` - timestamps
+
+### Files modified
+**`packages/web/src/lib/atproto.ts`**:
+- Added `SketchPane` interface: `{ target: string; content: string; order?: number }`
+- Added `SketchRecord` interface with all lexicon fields including `$type`
+- Added `SketchInput` interface for create/update operations
+- Updated `createSketch()` to save panes array with `$type: 'cc.hocket.sketch'`
+- Updated `updateSketch()` to preserve `createdAt` and update `updatedAt`
+- Updated `getSketch()` to return typed `SketchRecord`
+
+**`packages/web/src/routes/session.tsx`**:
+- Updated `handleSaveSketch` to create panes array from documents with target, content, order
+- Updated `loadSketch` to:
+  - Sort panes by order
+  - Call `session.setActiveDocuments()` with correct targets
+  - Set content for each pane after Yjs creates documents
+
+**`packages/web/src/contexts/sketch-context.tsx`**:
+- Updated `saveSketch` signature: `(name: string, panes: SketchPane[]) => Promise<void>`
+- Updated `updateExistingSketch` signature to accept panes array
+
+### ATProto notes
+- Lexicon publication is optional - PDS uses "fail-open" validation
+- Records include `$type: 'cc.hocket.sketch'` for proper interoperability
+- Sketches are saved to user's own PDS (bsky.social, tangled.social, etc.)
+
+### Build fix
+Also fixed a pre-existing build issue where npm workspace links were broken. Running `npm install` from root fixed the symlinks, allowing all 9 packages to build successfully.
+
+### Deployed
+- Committed: `feat: implement multi-pane sketch save/load with ATProto lexicon`
+- Merged to main via `--no-ff`
+- Pushed to origin
+
