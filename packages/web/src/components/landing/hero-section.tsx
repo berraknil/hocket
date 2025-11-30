@@ -1,3 +1,5 @@
+/* tslint:disable */
+
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -37,10 +39,10 @@ export function HeroSection() {
               {/* Small label */}
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-[0.3em] text-stone-400 font-light">
-                  Live Coding Platform
+                  Collaborative Live Coding Platform
                 </div>
                 <div className="text-xs uppercase tracking-[0.3em] text-stone-500 font-light">
-                  Built on top of AtProto
+                  Built on top of ATProto
                 </div>
               </div>
 
@@ -50,14 +52,12 @@ export function HeroSection() {
                   ALGORAVE
                 </div>
                 <div className="text-[clamp(2rem,8vw,6rem)] font-light leading-[0.9] tracking-[-0.01em] text-stone-600 mt-2">
-                  in the{" "}
-                  <span className="italic text-stone-900">ATmosphere</span>
+                  in the{" "}<span className="italic text-stone-900">ATmosphere</span>
                 </div>
               </h1>
 
               {/* Subtitle */}
               <p className="text-base text-stone-500 max-w-md leading-relaxed pt-4 font-light">
-                Collaborative live coding in the browser, built on AtProto.
                 Create algorithmic music and visuals, share sessions, and
                 perform with code in real-time.
               </p>
@@ -137,7 +137,7 @@ export function HeroSection() {
               />
               <FeatureItem
                 number="04"
-                title="AtProto Authentication"
+                title="ATProto Authentication"
                 description="Authenticate with any ATProto account from any platform"
               />
             </div>
