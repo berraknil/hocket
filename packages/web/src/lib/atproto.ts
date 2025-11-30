@@ -1,4 +1,9 @@
 import { BskyAgent, AtpSessionData } from '@atproto/api';
+import { SketchRecord, SketchPane } from './sketch-schema';
+
+// Re-export types for convenience
+export type { SketchRecord, SketchPane };
+export type { SketchListItem } from './sketch-schema';
 
 export interface SessionData extends AtpSessionData {
   service: string;
@@ -10,24 +15,6 @@ export const DEFAULT_PDS_SERVICES = [
 ];
 
 export const SKETCH_COLLECTION = 'cc.hocket.sketch';
-
-// Sketch record types matching the lexicon schema
-export interface SketchPane {
-  target: string;
-  content: string;
-  order?: number;
-}
-
-export interface SketchRecord {
-  $type?: string;
-  name: string;
-  description?: string;
-  panes: SketchPane[];
-  tags?: string[];
-  visibility?: 'public' | 'private';
-  createdAt: string;
-  updatedAt?: string;
-}
 
 export interface SketchInput {
   name: string;

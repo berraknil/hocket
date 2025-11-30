@@ -86,6 +86,20 @@ export interface Message {
   body: string[];
 }
 
+// Helper to get/set sketch URI for a session from localStorage
+const SKETCH_SESSION_KEY_PREFIX = 'hocket-sketch-session:';
+
+function getStoredSketchUri(sessionName: string): string | null {
+  return localStorage.getItem(`${SKETCH_SESSION_KEY_PREFIX}${sessionName}`);
+}
+
+function setStoredSketchUri(sessionName: string, uri: string): void {
+  localStorage.setItem(`${SKETCH_SESSION_KEY_PREFIX}${sessionName}`, uri);
+}
+
+// Auto-save debounce delay (in milliseconds)
+const AUTO_SAVE_DELAY = 3000;
+
 export async function loader({ params }: LoaderFunctionArgs) {
   return { name: params.name };
 }
@@ -123,6 +137,11 @@ function SessionContent() {
   const [saveSketchDialogOpen, setSaveSketchDialogOpen] = useState(false);
   const [currentSketchUri, setCurrentSketchUri] = useState<string | null>(null);
   const [currentSketchName, setCurrentSketchName] = useState<string>("");
+  
+  // Auto-save tracking refs
+  const autoSaveInitialized = useRef(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedContentRef = useRef<string>("");
 
   // Editor settings: Try to restore from local storage or use default settings
   const [editorSettings, setEditorSettings] = useState<EditorSettings>(() => {
@@ -506,6 +525,124 @@ function SessionContent() {
     }
   }, [session, username]);
 
+  // Auto-save: Initialize sketch on PDS for authenticated users
+  // This runs once when the session is ready and user is authenticated
+  useEffect(() => {
+    // Skip if already initialized, not authenticated, or loading from existing sketch
+    if (autoSaveInitialized.current) return;
+    if (authLoading || !isAuthenticated || !agent || !authSession) return;
+    if (!session || documents.length === 0) return;
+    
+    // If loading from URL sketch parameter, don't auto-create
+    const sketchUri = query.get("sketch");
+    if (sketchUri) {
+      autoSaveInitialized.current = true;
+      return;
+    }
+    
+    // Check if we already have a stored sketch URI for this session
+    const storedUri = getStoredSketchUri(name);
+    if (storedUri) {
+      // Try to load the existing sketch
+      const loadExistingSketch = async () => {
+        try {
+          const record = await getSketch(agent, storedUri);
+          setCurrentSketchUri(storedUri);
+          setCurrentSketchName(record.value.name);
+          autoSaveInitialized.current = true;
+          console.log("Restored sketch URI from localStorage:", storedUri);
+        } catch (error) {
+          // Sketch might have been deleted, create a new one
+          console.log("Stored sketch not found, will create new one");
+          localStorage.removeItem(`${SKETCH_SESSION_KEY_PREFIX}${name}`);
+          // Don't set initialized, let it fall through to create new
+        }
+      };
+      loadExistingSketch();
+      return;
+    }
+    
+    // Auto-create a new sketch for this session
+    const autoCreateSketch = async () => {
+      try {
+        const sketchName = generateSketchName();
+        const panes: SketchPane[] = documents.map((doc, index) => ({
+          target: doc.target,
+          content: doc.content,
+          order: index,
+        }));
+        
+        const result = await createSketch(agent, authSession.did, {
+          name: sketchName,
+          panes,
+          visibility: 'public',
+        });
+        
+        setCurrentSketchUri(result.uri);
+        setCurrentSketchName(sketchName);
+        setStoredSketchUri(name, result.uri);
+        autoSaveInitialized.current = true;
+        
+        // Store initial content hash to detect changes
+        lastSavedContentRef.current = JSON.stringify(panes);
+        
+        console.log("Auto-created sketch:", sketchName, result.uri);
+      } catch (error) {
+        console.error("Failed to auto-create sketch:", error);
+        // Still mark as initialized to prevent repeated attempts
+        autoSaveInitialized.current = true;
+      }
+    };
+    
+    autoCreateSketch();
+  }, [authLoading, isAuthenticated, agent, authSession, session, documents, name, query]);
+
+  // Auto-save: Save changes to PDS when documents change
+  useEffect(() => {
+    // Skip if not initialized or not authenticated
+    if (!autoSaveInitialized.current) return;
+    if (!isAuthenticated || !agent || !authSession) return;
+    if (!currentSketchUri || documents.length === 0) return;
+    
+    // Create content hash to detect actual changes
+    const panes: SketchPane[] = documents.map((doc, index) => ({
+      target: doc.target,
+      content: doc.content,
+      order: index,
+    }));
+    const contentHash = JSON.stringify(panes);
+    
+    // Skip if content hasn't changed
+    if (contentHash === lastSavedContentRef.current) return;
+    
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Debounced auto-save
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await updateSketch(agent, currentSketchUri, {
+          name: currentSketchName || generateSketchName(),
+          panes,
+          visibility: 'public',
+        });
+        lastSavedContentRef.current = contentHash;
+        console.log("Auto-saved sketch to PDS");
+      } catch (error) {
+        console.error("Failed to auto-save sketch:", error);
+      }
+    }, AUTO_SAVE_DELAY);
+    
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [documents, isAuthenticated, agent, authSession, currentSketchUri, currentSketchName]);
+
   // Reset messages count when panel is expanded (mark all messages as read)
   useEffect(() => setMessagesCount(0), [messagesPanelExpanded]);
 
@@ -699,14 +836,20 @@ function SessionContent() {
       });
       setCurrentSketchUri(result.uri);
       setCurrentSketchName(sketchName);
+      // Store the URI so we can reconnect to this sketch
+      setStoredSketchUri(name, result.uri);
+      autoSaveInitialized.current = true;
     }
+    
+    // Update last saved content to prevent immediate auto-save
+    lastSavedContentRef.current = JSON.stringify(panes);
 
     toast({
       title: "Sketch saved",
       description: `"${sketchName}" saved to ATproto`,
       duration: 3000,
     });
-  }, [agent, authSession, session, documents, currentSketchUri, toast]);
+  }, [agent, authSession, session, documents, currentSketchUri, name, toast]);
 
   // Download sketch as file
   const handleDownloadSketch = useCallback(() => {

@@ -145,3 +145,83 @@ Wrapped the session content in the standard page layout with Header, constrained
 ### Build
 
 - `npm run build` passes successfully
+
+---
+
+## 2025-11-30: Sketch Persistence and Auto-Save
+
+### What was done
+
+Implemented automatic sketch persistence so that when a logged-in user creates a new sketch, it's automatically saved to their PDS (Personal Data Server). Sketches now appear in the dashboard immediately and are auto-saved when content changes.
+
+### Problems Fixed
+
+1. **Type mismatch**: `sketch-schema.ts` had outdated types (`content: string`) that didn't match the actual lexicon schema (`panes: SketchPane[]`)
+2. **No auto-save**: New sketches were only saved if user manually clicked "Save to ATproto"
+3. **Dashboard empty**: Even after creating sketches, the dashboard showed nothing because the type mismatch caused failures
+
+### Solution
+
+1. **Fixed type definitions** - Updated `sketch-schema.ts` to match the actual lexicon schema with proper `SketchPane` and `SketchRecord` types
+2. **Added auto-save** - When authenticated users create a new session, a sketch is automatically created on their PDS
+3. **Debounced updates** - Content changes are auto-saved after 3 seconds of inactivity
+4. **Session-sketch linking** - Session URLs are linked to sketch URIs in localStorage so returning to a session reconnects to the same sketch
+
+### Files Modified
+
+**`packages/web/src/lib/sketch-schema.ts`**:
+- Added `SketchPane` interface: `{ target: string; content: string; order?: number }`
+- Updated `SketchRecord` to match lexicon: `{ $type?, name, description?, panes[], tags?, visibility?, createdAt, updatedAt? }`
+- Updated `SketchListItem` to properly type API responses
+
+**`packages/web/src/lib/atproto.ts`**:
+- Refactored to import types from `sketch-schema.ts` instead of duplicating
+- Re-exports types for convenient imports
+- Cleaner separation of concerns
+
+**`packages/web/src/routes/session.tsx`**:
+- Added helper functions `getStoredSketchUri()` / `setStoredSketchUri()` to link sessions to sketches
+- Added `autoSaveInitialized` ref to prevent duplicate sketch creation
+- Added `autoSaveTimeoutRef` for debounced saving
+- Added `lastSavedContentRef` to detect actual changes
+- Added useEffect for auto-creating sketch when authenticated user starts new session
+- Added useEffect for debounced auto-save on document changes (3 second delay)
+- Updated `handleSaveSketch` to store URI and update content ref
+
+**`packages/web/src/components/sketch/sketch-card.tsx`**:
+- Enhanced to display targets/languages used in each sketch (badges)
+- Shows pane targets like "strudel", "hydra" etc.
+
+### How It Works
+
+1. **New Session Flow (Authenticated)**:
+   - User clicks "New Sketch" or navigates to `/s/{sessionName}`
+   - After session loads, auto-save effect checks if user is authenticated
+   - If no existing sketch linked to this session, creates new sketch on PDS
+   - Stores `hocket-sketch-session:{sessionName}` -> URI in localStorage
+
+2. **Auto-Save Flow**:
+   - When documents change, debounced effect queues save after 3 seconds
+   - Only saves if content actually changed (compared via JSON stringification)
+   - Updates existing sketch record on PDS
+
+3. **Return to Session**:
+   - If user returns to same session URL, looks up stored sketch URI
+   - Reconnects to existing sketch for continued editing
+
+4. **Dashboard**:
+   - Fetches all sketches from user's PDS collection `cc.hocket.sketch`
+   - Displays sketch cards with name, date, and target language badges
+
+### Tests
+
+All sketch and session tests pass:
+- `sketch-management.spec.ts`: 7/7 pass
+- `session.spec.ts`: 10/10 pass
+- Build passes
+
+### Deployed
+
+- Branch: `feature/fix-sketch-persistence`
+- Build: Passes
+- Type check: Passes
