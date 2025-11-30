@@ -76,10 +76,72 @@ Changed sketch record format to store panes as a structured array with target, c
 - Sketches are saved to user's own PDS (bsky.social, tangled.social, etc.)
 
 ### Build fix
+
 Also fixed a pre-existing build issue where npm workspace links were broken. Running `npm install` from root fixed the symlinks, allowing all 9 packages to build successfully.
 
 ### Deployed
+
 - Committed: `feat: implement multi-pane sketch save/load with ATProto lexicon`
 - Merged to main via `--no-ff`
 - Pushed to origin
 
+---
+
+## 2025-11-30: Session Layout - Constrained Width with Header/Footer
+
+### What was done
+
+Restructured the session/playground page to include the site-wide Header and Footer, constrain the editor area to max-w-7xl width, and add rounded corners to match the design system.
+
+### Problem
+
+The session page (`/s/{name}`) was a full-screen Flok editor that didn't match the site's visual design. It had no header/footer, used the entire viewport width, and didn't align with the constrained layout of other pages.
+
+### Solution
+
+Wrapped the session content in the standard page layout with Header, constrained main content area, and Footer. The editor area now has rounded corners and is centered within max-w-7xl.
+
+### Files modified
+
+**`packages/web/src/routes/session.tsx`**:
+
+- Added imports for Header and Footer components
+- Restructured JSX to use flex column layout with Header at top, Footer at bottom
+- Main content area uses `max-w-7xl px-6 lg:px-8` for consistent width
+- Editor container has `rounded-lg` for rounded corners
+- Moved CommandsButton and ReplsButton inside the constrained container (absolute positioned)
+- Editor container height is `calc(100vh - 8rem)` to fit between header and footer
+
+**`packages/web/src/components/mosaic.tsx`**:
+
+- Changed `h-screen` to `h-full` so Mosaic fills its parent container
+- Updated child divs to use `h-full` instead of `h-screen`
+
+### Files created
+
+**`packages/web/tests/e2e/session-layout.spec.ts`**:
+
+- 11 new E2E tests covering:
+  - Header visibility and navigation on session page
+  - Footer visibility on session page
+  - Constrained width (max-w-7xl) verification
+  - Rounded corners (rounded-lg) verification
+  - Background color (bg-stone-50) verification
+  - Command button position and functionality
+  - Responsive layout behavior
+
+### Tests
+
+- **New tests**: 11/11 pass
+- **All tests**: 139 pass, 11 fail (pre-existing failures unrelated to this change)
+
+### Pre-existing test failures (not caused by this change)
+
+- Dashboard link tests expect link without authentication
+- Text locator issues with `// comment` syntax
+- Panic toast tests match multiple elements
+- Sketch loading timeout flakiness
+
+### Build
+
+- `npm run build` passes successfully

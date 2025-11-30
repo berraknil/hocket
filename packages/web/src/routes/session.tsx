@@ -15,6 +15,8 @@ import { Toaster } from "@/components/ui/toaster";
 import UsernameDialog from "@/components/username-dialog";
 import { WebTargetIframe } from "@/components/web-target-iframe";
 import { SaveSketchDialog } from "@/components/sketch/save-sketch-dialog";
+import { Header } from "@/components/landing/header";
+import { Footer } from "@/components/landing/footer";
 import { AuthProvider } from "@/contexts/auth-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useHash } from "@/hooks/use-hash";
@@ -806,10 +808,13 @@ function SessionContent() {
   };
 
   return (
-    <div style={{ backgroundColor: `rgb(0 0 0 / ${bgOpacity})` }}>
+    <div className="min-h-screen flex flex-col bg-stone-50">
       <Helmet>
         <title>{name} ~ Hocket</title>
       </Helmet>
+      <Header />
+      
+      {/* Dialogs - outside main content */}
       <SessionCommandDialog
         open={commandsDialogOpen}
         editorSettings={editorSettings}
@@ -877,83 +882,102 @@ function SessionContent() {
           onOpenChange={(isOpen) => setReplsDialogOpen(isOpen)}
         />
       )}
-      <Mosaic
-        className={cn(
-          "transition-opacity",
-          hidden ? "opacity-0" : "opacity-100",
-        )}
-        currentPaneIndex={currentPaneIndex}
-        items={documents.map((doc, i) => (
-          <Pane
-            key={doc.id}
-            document={doc}
-            onTargetChange={handleTargetSelectChange}
-            onEvaluateButtonClick={handleEvaluateButtonClick}
-            onCommandsButtonClick={() => setCommandsDialogOpen(true)}
+
+      {/* Main content area - constrained width */}
+      <main className="flex-1 pt-16 pb-4">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full">
+          {/* Editor container with rounded corners and dark background */}
+          <div 
+            className="relative rounded-lg overflow-hidden h-[calc(100vh-8rem)]"
+            style={{ backgroundColor: `rgb(0 0 0 / ${bgOpacity})` }}
           >
-            <Editor
-              ref={editorRefs[i]}
-              document={doc}
-              autoFocus={i === 0}
-              settings={editorSettings}
-              className="absolute top-6 overflow-auto flex-grow w-full h-[calc(100%-32px)] z-10"
+            {/* Buttons inside constrained area */}
+            {!isMobile && (
+              <div
+                className={cn(
+                  "absolute top-2 right-2 flex z-20",
+                  "transition-opacity",
+                  hidden ? "opacity-0" : "opacity-100",
+                )}
+              >
+                {replTargets.length > 0 && (
+                  <ReplsButton onClick={() => setReplsDialogOpen(true)} />
+                )}
+                <CommandsButton onClick={() => setCommandsDialogOpen(true)} />
+              </div>
+            )}
+
+            <Mosaic
+              className={cn(
+                "transition-opacity",
+                hidden ? "opacity-0" : "opacity-100",
+              )}
+              currentPaneIndex={currentPaneIndex}
+              items={documents.map((doc, i) => (
+                <Pane
+                  key={doc.id}
+                  document={doc}
+                  onTargetChange={handleTargetSelectChange}
+                  onEvaluateButtonClick={handleEvaluateButtonClick}
+                  onCommandsButtonClick={() => setCommandsDialogOpen(true)}
+                >
+                  <Editor
+                    ref={editorRefs[i]}
+                    document={doc}
+                    autoFocus={i === 0}
+                    settings={editorSettings}
+                    className="absolute top-6 overflow-auto flex-grow w-full h-[calc(100%-32px)] z-10"
+                  />
+                </Pane>
+              ))}
             />
-          </Pane>
-        ))}
-      />
-      {activeWebTargets.map((target) => (
-        <WebTargetIframe
-          key={target}
-          session={session}
-          target={target}
-          displaySettings={displaySettings}
-        />
-      ))}
-      {!isMobile && (
-        <div
-          className={cn(
-            "fixed top-1 right-1 flex m-1",
-            "transition-opacity",
-            hidden ? "opacity-0" : "opacity-100",
-          )}
-        >
-          {replTargets.length > 0 && (
-            <ReplsButton onClick={() => setReplsDialogOpen(true)} />
-          )}
-          <CommandsButton onClick={() => setCommandsDialogOpen(true)} />
+            
+            {activeWebTargets.map((target) => (
+              <WebTargetIframe
+                key={target}
+                session={session}
+                target={target}
+                displaySettings={displaySettings}
+              />
+            ))}
+            
+            {messagesPanelExpanded && (
+              <MessagesPanel
+                className={cn(
+                  "transition-opacity",
+                  hidden ? "opacity-0" : "opacity-100",
+                )}
+                messages={messages}
+                autoShowMessages={autoShowMessages}
+                hideMessagesOnEval={hideMessagesOnEval}
+                onAutoShowToggleClick={handleAutoShowToggleClick}
+                onHideMessagesOnEvalClick={handleHideMessagesOnEvalClick}
+                onClearMessagesClick={handleClearMessagesClick}
+              />
+            )}
+            
+            <StatusBar
+              className={cn(
+                "transition-opacity",
+                hidden ? "opacity-0" : "opacity-100",
+              )}
+              pubSubState={pubSubState}
+              syncState={syncState}
+              messagesCount={messagesPanelExpanded ? 0 : messagesCount}
+              onExpandClick={() => {
+                setMessagesPanelExpanded((v) => !v);
+              }}
+              currentPaneIndex={currentPaneIndex}
+              totalPanes={documents.length}
+              onNextPane={handleNextPane}
+              onPreviousPane={handlePreviousPane}
+              keyboardHeight={keyboardHeight}
+            />
+          </div>
         </div>
-      )}
-      {messagesPanelExpanded && (
-        <MessagesPanel
-          className={cn(
-            "transition-opacity",
-            hidden ? "opacity-0" : "opacity-100",
-          )}
-          messages={messages}
-          autoShowMessages={autoShowMessages}
-          hideMessagesOnEval={hideMessagesOnEval}
-          onAutoShowToggleClick={handleAutoShowToggleClick}
-          onHideMessagesOnEvalClick={handleHideMessagesOnEvalClick}
-          onClearMessagesClick={handleClearMessagesClick}
-        />
-      )}
-      <StatusBar
-        className={cn(
-          "transition-opacity",
-          hidden ? "opacity-0" : "opacity-100",
-        )}
-        pubSubState={pubSubState}
-        syncState={syncState}
-        messagesCount={messagesPanelExpanded ? 0 : messagesCount}
-        onExpandClick={() => {
-          setMessagesPanelExpanded((v) => !v);
-        }}
-        currentPaneIndex={currentPaneIndex}
-        totalPanes={documents.length}
-        onNextPane={handleNextPane}
-        onPreviousPane={handlePreviousPane}
-        keyboardHeight={keyboardHeight}
-      />
+      </main>
+
+      <Footer />
       <Toaster />
     </div>
   );
