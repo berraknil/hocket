@@ -1,62 +1,62 @@
-import { useState } from 'react';
-import { useAuth } from '../../hooks/use-auth';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useAuth } from "../../hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 
 // Helper function to extract service from handle
 function getServiceFromHandle(handle: string): string {
   // If it's an email, default to bsky.social
-  if (handle.includes('@')) {
-    return 'https://bsky.social';
+  if (handle.includes("@")) {
+    return "https://bsky.social";
   }
 
   // Extract domain from handle (e.g., username.bsky.social -> https://bsky.social)
-  const parts = handle.split('.');
+  const parts = handle.split(".");
   if (parts.length >= 2) {
-    const domain = parts.slice(-2).join('.');
+    const domain = parts.slice(-2).join(".");
     return `https://${domain}`;
   }
 
   // Default to bsky.social if we can't determine
-  return 'https://bsky.social';
+  return "https://bsky.social";
 }
 
 // Helper function to provide better error messages
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    
+
     // Handle specific error cases
-    if (message.includes('invalid identifier or password')) {
-      return 'Invalid handle or app password. Please check your credentials and try again.';
+    if (message.includes("invalid identifier or password")) {
+      return "Invalid handle or app password. Please check your credentials and try again.";
     }
-    if (message.includes('network') || message.includes('fetch')) {
-      return 'Unable to connect to the service. Please check your internet connection and try again.';
+    if (message.includes("network") || message.includes("fetch")) {
+      return "Unable to connect to the service. Please check your internet connection and try again.";
     }
-    if (message.includes('service') || message.includes('pds')) {
-      return 'Could not connect to the ATProto service. Please verify your handle format (e.g., username.bsky.social).';
+    if (message.includes("service") || message.includes("pds")) {
+      return "Could not connect to the ATProto service. Please verify your handle format (e.g., username.bsky.social).";
     }
-    if (message.includes('timeout')) {
-      return 'Connection timeout. The service may be unavailable. Please try again later.';
+    if (message.includes("timeout")) {
+      return "Connection timeout. The service may be unavailable. Please try again later.";
     }
-    
+
     // Return the original error message if we don't have a better one
     return error.message;
   }
-  
-  return 'An unexpected error occurred. Please try again.';
+
+  return "An unexpected error occurred. Please try again.";
 }
 
 export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
@@ -64,7 +64,7 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
       const service = getServiceFromHandle(identifier);
       await signIn(service, identifier, password);
       // Navigate to redirect URL or dashboard
-      navigate(redirectUrl || '/dashboard');
+      navigate(redirectUrl || "/dashboard");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -89,8 +89,8 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Handle input */}
           <div>
-            <label 
-              className="block text-xs uppercase tracking-wider text-stone-500 font-light mb-3" 
+            <label
+              className="block text-xs uppercase tracking-wider text-stone-500 font-light mb-3"
               htmlFor="identifier"
             >
               Handle or Email
@@ -113,8 +113,8 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
 
           {/* Password input */}
           <div>
-            <label 
-              className="block text-xs uppercase tracking-wider text-stone-500 font-light mb-3" 
+            <label
+              className="block text-xs uppercase tracking-wider text-stone-500 font-light mb-3"
               htmlFor="password"
             >
               App Password
@@ -138,7 +138,9 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
           {/* Error message with better styling */}
           {error && (
             <div className="border-l-2 border-red-500 bg-red-50/50 pl-4 pr-4 py-3">
-              <p className="text-sm text-red-800 font-light leading-relaxed">{error}</p>
+              <p className="text-sm text-red-800 font-light leading-relaxed">
+                {error}
+              </p>
             </div>
           )}
 
@@ -150,14 +152,29 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
           >
             {isLoading ? (
               <span className="inline-flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Signing in...
               </span>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>
@@ -165,16 +182,16 @@ export function SignInForm({ redirectUrl }: { redirectUrl?: string | null }) {
         {/* Additional help text */}
         <div className="mt-8 pt-6 border-t border-stone-200/50">
           <p className="text-xs text-stone-500 font-light leading-relaxed">
-            Don't have an account?{' '}
-            <a 
-              href="https://bsky.app" 
-              target="_blank" 
+            Don't have an account?{" "}
+            <a
+              href="https://bsky.app"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-stone-900 hover:underline"
             >
               Create one on Bluesky
-            </a>
-            {' '}or any other ATProto service.
+            </a>{" "}
+            or any other ATProto service.
           </p>
         </div>
       </div>

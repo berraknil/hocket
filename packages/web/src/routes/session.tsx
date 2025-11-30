@@ -24,7 +24,13 @@ import { useQuery } from "@/hooks/use-query";
 import { useShortcut } from "@/hooks/use-shortcut";
 import { useStrudelCodemirrorExtensions } from "@/hooks/use-strudel-codemirror-extensions";
 import { useToast } from "@/hooks/use-toast";
-import { getSketch, createSketch, updateSketch, SketchRecord, SketchPane } from "@/lib/atproto";
+import {
+  getSketch,
+  createSketch,
+  updateSketch,
+  SketchRecord,
+  SketchPane,
+} from "@/lib/atproto";
 import {
   DisplaySettings,
   defaultDisplaySettings,
@@ -87,7 +93,7 @@ export interface Message {
 }
 
 // Helper to get/set sketch URI for a session from localStorage
-const SKETCH_SESSION_KEY_PREFIX = 'hocket-sketch-session:';
+const SKETCH_SESSION_KEY_PREFIX = "hocket-sketch-session:";
 
 function getStoredSketchUri(sessionName: string): string | null {
   return localStorage.getItem(`${SKETCH_SESSION_KEY_PREFIX}${sessionName}`);
@@ -115,9 +121,14 @@ function SessionContent() {
 
   const { name } = useLoaderData() as SessionLoaderParams;
   const navigate = useNavigate();
-  
+
   // Auth hook for sketch save functionality
-  const { isAuthenticated, agent, session: authSession, isLoading: authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    agent,
+    session: authSession,
+    isLoading: authLoading,
+  } = useAuth();
 
   const [session, setSession] = useState<Session | null>(null);
   const [pubSubState, setPubSubState] = useState<PubSubState>("disconnected");
@@ -132,12 +143,12 @@ function SessionContent() {
     useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [hidden, setHidden] = useState<boolean>(false);
-  
+
   // Sketch save/load state
   const [saveSketchDialogOpen, setSaveSketchDialogOpen] = useState(false);
   const [currentSketchUri, setCurrentSketchUri] = useState<string | null>(null);
   const [currentSketchName, setCurrentSketchName] = useState<string>("");
-  
+
   // Auto-save tracking refs
   const autoSaveInitialized = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -215,16 +226,14 @@ function SessionContent() {
     window.parent.postMessage(message, "*");
   };
 
-
-
   // Block access to shared sketches for unauthenticated users
   useEffect(() => {
     const sketchUri = query.get("sketch");
     if (!sketchUri) return;
-    
+
     // Wait for auth to finish loading before checking
     if (authLoading) return;
-    
+
     // If user is not authenticated, redirect to sign-in
     if (!isAuthenticated) {
       toast({
@@ -232,7 +241,9 @@ function SessionContent() {
         title: "Authentication required",
         description: "Please sign in to access shared sketches.",
       });
-      navigate(`/auth/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      navigate(
+        `/auth/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      );
     }
   }, [query, isAuthenticated, authLoading, navigate, toast]);
 
@@ -246,23 +257,25 @@ function SessionContent() {
       try {
         const record = await getSketch(agent, sketchUri);
         const sketchData = record.value as SketchRecord;
-        
+
         setCurrentSketchUri(sketchUri);
         setCurrentSketchName(sketchData.name);
-        
+
         // Check if sketch has panes array (new format) or content string (old format)
         if (sketchData.panes && sketchData.panes.length > 0) {
           // New format: restore panes with correct targets
-          const sortedPanes = [...sketchData.panes].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-          
+          const sortedPanes = [...sketchData.panes].sort(
+            (a, b) => (a.order ?? 0) - (b.order ?? 0),
+          );
+
           // Set active documents with targets from sketch
           session.setActiveDocuments(
             sortedPanes.map((pane, i) => ({
               id: String(i + 1),
               target: pane.target,
-            }))
+            })),
           );
-          
+
           // Wait for Yjs to create documents, then set content
           setTimeout(() => {
             const docs = session.getDocuments();
@@ -273,7 +286,7 @@ function SessionContent() {
             });
           }, 150);
         }
-        
+
         toast({
           title: "Sketch loaded",
           description: `"${sketchData.name}" loaded successfully`,
@@ -295,12 +308,13 @@ function SessionContent() {
   // Block access to shared sessions (via URL hash with code) for unauthenticated users
   useEffect(() => {
     // Check if the URL hash contains shared code (c0, c1, etc. or code parameter)
-    const hasSharedCode = hash["code"] || hash["c0"] || hash["c1"] || hash["targets"];
+    const hasSharedCode =
+      hash["code"] || hash["c0"] || hash["c1"] || hash["targets"];
     if (!hasSharedCode) return;
-    
+
     // Wait for auth to finish loading before checking
     if (authLoading) return;
-    
+
     // If user is not authenticated, redirect to sign-in
     if (!isAuthenticated) {
       toast({
@@ -308,7 +322,9 @@ function SessionContent() {
         title: "Authentication required",
         description: "Please sign in to access shared sessions.",
       });
-      navigate(`/auth/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.hash)}`);
+      navigate(
+        `/auth/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.hash)}`,
+      );
     }
   }, [hash, isAuthenticated, authLoading, navigate, toast]);
 
@@ -354,7 +370,7 @@ function SessionContent() {
         // For each valid target, set the corresponding document content from
         // hash (if present). `code` is an alias of `c0`.
         const documents = newSession.getDocuments();
-        
+
         if (validTargets.length > 0) {
           // Set code from hash params if provided
           validTargets.forEach((_, i) => {
@@ -407,7 +423,9 @@ function SessionContent() {
       // Give WebSocket sync a chance to fire first, then initialize if needed
       setTimeout(() => {
         if (!sessionInitialized && newSession.getDocuments().length === 0) {
-          console.log("WebSocket connected but no documents, initializing new session");
+          console.log(
+            "WebSocket connected but no documents, initializing new session",
+          );
           initializeSession();
         }
       }, 500);
@@ -532,14 +550,14 @@ function SessionContent() {
     if (autoSaveInitialized.current) return;
     if (authLoading || !isAuthenticated || !agent || !authSession) return;
     if (!session || documents.length === 0) return;
-    
+
     // If loading from URL sketch parameter, don't auto-create
     const sketchUri = query.get("sketch");
     if (sketchUri) {
       autoSaveInitialized.current = true;
       return;
     }
-    
+
     // Check if we already have a stored sketch URI for this session
     const storedUri = getStoredSketchUri(name);
     if (storedUri) {
@@ -561,7 +579,7 @@ function SessionContent() {
       loadExistingSketch();
       return;
     }
-    
+
     // Auto-create a new sketch for this session
     const autoCreateSketch = async () => {
       try {
@@ -571,21 +589,21 @@ function SessionContent() {
           content: doc.content,
           order: index,
         }));
-        
+
         const result = await createSketch(agent, authSession.did, {
           name: sketchName,
           panes,
-          visibility: 'public',
+          visibility: "public",
         });
-        
+
         setCurrentSketchUri(result.uri);
         setCurrentSketchName(sketchName);
         setStoredSketchUri(name, result.uri);
         autoSaveInitialized.current = true;
-        
+
         // Store initial content hash to detect changes
         lastSavedContentRef.current = JSON.stringify(panes);
-        
+
         console.log("Auto-created sketch:", sketchName, result.uri);
       } catch (error) {
         console.error("Failed to auto-create sketch:", error);
@@ -593,9 +611,18 @@ function SessionContent() {
         autoSaveInitialized.current = true;
       }
     };
-    
+
     autoCreateSketch();
-  }, [authLoading, isAuthenticated, agent, authSession, session, documents, name, query]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    agent,
+    authSession,
+    session,
+    documents,
+    name,
+    query,
+  ]);
 
   // Auto-save: Save changes to PDS when documents change
   useEffect(() => {
@@ -603,7 +630,7 @@ function SessionContent() {
     if (!autoSaveInitialized.current) return;
     if (!isAuthenticated || !agent || !authSession) return;
     if (!currentSketchUri || documents.length === 0) return;
-    
+
     // Create content hash to detect actual changes
     const panes: SketchPane[] = documents.map((doc, index) => ({
       target: doc.target,
@@ -611,22 +638,22 @@ function SessionContent() {
       order: index,
     }));
     const contentHash = JSON.stringify(panes);
-    
+
     // Skip if content hasn't changed
     if (contentHash === lastSavedContentRef.current) return;
-    
+
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
-    
+
     // Debounced auto-save
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
         await updateSketch(agent, currentSketchUri, {
           name: currentSketchName || generateSketchName(),
           panes,
-          visibility: 'public',
+          visibility: "public",
         });
         lastSavedContentRef.current = contentHash;
         console.log("Auto-saved sketch to PDS");
@@ -634,14 +661,21 @@ function SessionContent() {
         console.error("Failed to auto-save sketch:", error);
       }
     }, AUTO_SAVE_DELAY);
-    
+
     // Cleanup timeout on unmount or dependency change
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [documents, isAuthenticated, agent, authSession, currentSketchUri, currentSketchName]);
+  }, [
+    documents,
+    isAuthenticated,
+    agent,
+    authSession,
+    currentSketchUri,
+    currentSketchName,
+  ]);
 
   // Reset messages count when panel is expanded (mark all messages as read)
   useEffect(() => setMessagesCount(0), [messagesPanelExpanded]);
@@ -807,49 +841,52 @@ function SessionContent() {
   }, [session, documents]);
 
   // Save sketch to ATproto
-  const handleSaveSketch = useCallback(async (sketchName: string) => {
-    if (!agent || !authSession || !session) {
-      throw new Error("Not authenticated");
-    }
+  const handleSaveSketch = useCallback(
+    async (sketchName: string) => {
+      if (!agent || !authSession || !session) {
+        throw new Error("Not authenticated");
+      }
 
-    // Create panes array from documents
-    const panes: SketchPane[] = documents.map((doc, index) => ({
-      target: doc.target,
-      content: doc.content,
-      order: index,
-    }));
+      // Create panes array from documents
+      const panes: SketchPane[] = documents.map((doc, index) => ({
+        target: doc.target,
+        content: doc.content,
+        order: index,
+      }));
 
-    if (currentSketchUri) {
-      // Update existing sketch
-      await updateSketch(agent, currentSketchUri, {
-        name: sketchName,
-        panes,
-        visibility: 'public',
+      if (currentSketchUri) {
+        // Update existing sketch
+        await updateSketch(agent, currentSketchUri, {
+          name: sketchName,
+          panes,
+          visibility: "public",
+        });
+        setCurrentSketchName(sketchName);
+      } else {
+        // Create new sketch
+        const result = await createSketch(agent, authSession.did, {
+          name: sketchName,
+          panes,
+          visibility: "public",
+        });
+        setCurrentSketchUri(result.uri);
+        setCurrentSketchName(sketchName);
+        // Store the URI so we can reconnect to this sketch
+        setStoredSketchUri(name, result.uri);
+        autoSaveInitialized.current = true;
+      }
+
+      // Update last saved content to prevent immediate auto-save
+      lastSavedContentRef.current = JSON.stringify(panes);
+
+      toast({
+        title: "Sketch saved",
+        description: `"${sketchName}" saved to ATproto`,
+        duration: 3000,
       });
-      setCurrentSketchName(sketchName);
-    } else {
-      // Create new sketch
-      const result = await createSketch(agent, authSession.did, {
-        name: sketchName,
-        panes,
-        visibility: 'public',
-      });
-      setCurrentSketchUri(result.uri);
-      setCurrentSketchName(sketchName);
-      // Store the URI so we can reconnect to this sketch
-      setStoredSketchUri(name, result.uri);
-      autoSaveInitialized.current = true;
-    }
-    
-    // Update last saved content to prevent immediate auto-save
-    lastSavedContentRef.current = JSON.stringify(panes);
-
-    toast({
-      title: "Sketch saved",
-      description: `"${sketchName}" saved to ATproto`,
-      duration: 3000,
-    });
-  }, [agent, authSession, session, documents, currentSketchUri, name, toast]);
+    },
+    [agent, authSession, session, documents, currentSketchUri, name, toast],
+  );
 
   // Download sketch as file
   const handleDownloadSketch = useCallback(() => {
@@ -956,7 +993,7 @@ function SessionContent() {
         <title>{name} ~ Hocket</title>
       </Helmet>
       <Header />
-      
+
       {/* Dialogs - outside main content */}
       <SessionCommandDialog
         open={commandsDialogOpen}
@@ -1030,7 +1067,7 @@ function SessionContent() {
       <main className="flex-1 pt-16 pb-4">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full">
           {/* Editor container with rounded corners and dark background */}
-          <div 
+          <div
             className="relative rounded-lg overflow-hidden h-[calc(100vh-8rem)]"
             style={{ backgroundColor: `rgb(0 0 0 / ${bgOpacity})` }}
           >
@@ -1074,7 +1111,7 @@ function SessionContent() {
                 </Pane>
               ))}
             />
-            
+
             {activeWebTargets.map((target) => (
               <WebTargetIframe
                 key={target}
@@ -1083,7 +1120,7 @@ function SessionContent() {
                 displaySettings={displaySettings}
               />
             ))}
-            
+
             {messagesPanelExpanded && (
               <MessagesPanel
                 className={cn(
@@ -1098,7 +1135,7 @@ function SessionContent() {
                 onClearMessagesClick={handleClearMessagesClick}
               />
             )}
-            
+
             <StatusBar
               className={cn(
                 "transition-opacity",

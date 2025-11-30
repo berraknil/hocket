@@ -1,18 +1,30 @@
-import React, { createContext, useState, useEffect } from 'react';
-import { useAuth } from '../hooks/use-auth';
-import { listSketches, createSketch, updateSketch, deleteSketch, SketchPane } from '../lib/atproto';
-import { SketchListItem } from '../lib/sketch-schema';
+import React, { createContext, useState, useEffect } from "react";
+import { useAuth } from "../hooks/use-auth";
+import {
+  listSketches,
+  createSketch,
+  updateSketch,
+  deleteSketch,
+  SketchPane,
+} from "../lib/atproto";
+import { SketchListItem } from "../lib/sketch-schema";
 
 interface SketchContextType {
   sketches: SketchListItem[];
   isLoading: boolean;
   refreshSketches: () => Promise<void>;
   saveSketch: (name: string, panes: SketchPane[]) => Promise<void>;
-  updateExistingSketch: (uri: string, name: string, panes: SketchPane[]) => Promise<void>;
+  updateExistingSketch: (
+    uri: string,
+    name: string,
+    panes: SketchPane[],
+  ) => Promise<void>;
   removeSketch: (uri: string) => Promise<void>;
 }
 
-export const SketchContext = createContext<SketchContextType | undefined>(undefined);
+export const SketchContext = createContext<SketchContextType | undefined>(
+  undefined,
+);
 
 export function SketchProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, agent, session } = useAuth();
@@ -30,7 +42,7 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
       const records = await listSketches(agent, session.did);
       setSketches(records as unknown as SketchListItem[]);
     } catch (error) {
-      console.error('Failed to load sketches:', error);
+      console.error("Failed to load sketches:", error);
       setSketches([]);
     } finally {
       setIsLoading(false);
@@ -47,27 +59,31 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
 
   const saveSketch = async (name: string, panes: SketchPane[]) => {
     if (!agent || !session) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
 
     await createSketch(agent, session.did, {
       name,
       panes,
-      visibility: 'public',
+      visibility: "public",
     });
 
     await refreshSketches();
   };
 
-  const updateExistingSketch = async (uri: string, name: string, panes: SketchPane[]) => {
+  const updateExistingSketch = async (
+    uri: string,
+    name: string,
+    panes: SketchPane[],
+  ) => {
     if (!agent) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
 
     await updateSketch(agent, uri, {
       name,
       panes,
-      visibility: 'public',
+      visibility: "public",
     });
 
     await refreshSketches();
@@ -75,7 +91,7 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
 
   const removeSketch = async (uri: string) => {
     if (!agent) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
 
     await deleteSketch(agent, uri);

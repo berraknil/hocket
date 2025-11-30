@@ -161,7 +161,9 @@ export default function SessionCommandDialog({
                 <Link to="/auth/sign-in">
                   <CommandItem>
                     <LogIn className="mr-2 h-4 w-4" />
-                    <span className="text-stone-500">Sign in to share sessions</span>
+                    <span className="text-stone-500">
+                      Sign in to share sessions
+                    </span>
                   </CommandItem>
                 </Link>
               )}

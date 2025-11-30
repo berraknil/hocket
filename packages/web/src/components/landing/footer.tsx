@@ -5,7 +5,9 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500 font-light">
           {/* Attribution */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1">
-            <span className="uppercase tracking-wider text-stone-400">Built with</span>
+            <span className="uppercase tracking-wider text-stone-400">
+              Built with
+            </span>
             <a
               href="https://flok.cc"
               target="_blank"

@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/use-auth';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/use-auth";
 
 export function Header() {
   const { isAuthenticated, signOut } = useAuth();
@@ -7,7 +7,7 @@ export function Header() {
 
   const handleSignOut = () => {
     signOut();
-    navigate('/');
+    navigate("/");
   };
 
   return (
@@ -67,8 +67,26 @@ export function Header() {
 }
 
 function generateSessionName(): string {
-  const adjectives = ['swift', 'bright', 'cosmic', 'lunar', 'stellar', 'quantum', 'neural', 'sonic'];
-  const nouns = ['wave', 'pulse', 'beam', 'flow', 'spark', 'drift', 'glow', 'beat'];
+  const adjectives = [
+    "swift",
+    "bright",
+    "cosmic",
+    "lunar",
+    "stellar",
+    "quantum",
+    "neural",
+    "sonic",
+  ];
+  const nouns = [
+    "wave",
+    "pulse",
+    "beam",
+    "flow",
+    "spark",
+    "drift",
+    "glow",
+    "beat",
+  ];
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
   const num = Math.floor(Math.random() * 1000);

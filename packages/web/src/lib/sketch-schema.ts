@@ -12,7 +12,7 @@ export interface SketchRecord {
   description?: string;
   panes: SketchPane[];
   tags?: string[];
-  visibility?: 'public' | 'private';
+  visibility?: "public" | "private";
   createdAt: string;
   updatedAt?: string;
 }

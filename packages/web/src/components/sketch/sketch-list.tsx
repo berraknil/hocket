@@ -1,5 +1,5 @@
-import { SketchListItem } from '../../lib/sketch-schema';
-import { SketchCard } from './sketch-card';
+import { SketchListItem } from "../../lib/sketch-schema";
+import { SketchCard } from "./sketch-card";
 
 interface SketchListProps {
   sketches: SketchListItem[];
@@ -8,7 +8,12 @@ interface SketchListProps {
   onDelete?: (sketch: SketchListItem) => void;
 }
 
-export function SketchList({ sketches, isLoading, onOpen, onDelete }: SketchListProps) {
+export function SketchList({
+  sketches,
+  isLoading,
+  onOpen,
+  onDelete,
+}: SketchListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -37,7 +42,9 @@ export function SketchList({ sketches, isLoading, onOpen, onDelete }: SketchList
             d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-semibold text-stone-900">No sketches</h3>
+        <h3 className="mt-2 text-sm font-semibold text-stone-900">
+          No sketches
+        </h3>
         <p className="mt-1 text-sm text-stone-500">
           Get started by creating a new sketch.
         </p>

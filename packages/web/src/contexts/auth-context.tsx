@@ -1,20 +1,31 @@
-import React, { createContext, useState, useEffect } from 'react';
-import { BskyAgent } from '@atproto/api';
-import { SessionData, loginWithAppPassword, resumeSession, createAgent } from '../lib/atproto';
+import React, { createContext, useState, useEffect } from "react";
+import { BskyAgent } from "@atproto/api";
+import {
+  SessionData,
+  loginWithAppPassword,
+  resumeSession,
+  createAgent,
+} from "../lib/atproto";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   session: SessionData | null;
   agent: BskyAgent | null;
-  signIn: (service: string, identifier: string, password: string) => Promise<void>;
+  signIn: (
+    service: string,
+    identifier: string,
+    password: string,
+  ) => Promise<void>;
   signOut: () => void;
   isLoading: boolean;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
-const SESSION_STORAGE_KEY = 'hocket-session';
-const PDS_SERVICE_KEY = 'hocket-pds-service';
+const SESSION_STORAGE_KEY = "hocket-session";
+const PDS_SERVICE_KEY = "hocket-pds-service";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionData | null>(null);
@@ -54,8 +65,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const signIn = async (service: string, identifier: string, password: string) => {
-    const newSession = await loginWithAppPassword(service, identifier, password);
+  const signIn = async (
+    service: string,
+    identifier: string,
+    password: string,
+  ) => {
+    const newSession = await loginWithAppPassword(
+      service,
+      identifier,
+      password,
+    );
     const newAgent = await resumeSession(newSession);
 
     setSession(newSession);

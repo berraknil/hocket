@@ -1,14 +1,14 @@
-import { SignInForm } from '../../components/auth/sign-in-form';
-import { useAuth } from '../../hooks/use-auth';
-import { Navigate, useSearchParams } from 'react-router-dom';
-import { AuthProvider } from '../../contexts/auth-context';
-import { Header } from '../../components/landing/header';
-import { Footer } from '../../components/landing/footer';
+import { SignInForm } from "../../components/auth/sign-in-form";
+import { useAuth } from "../../hooks/use-auth";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { AuthProvider } from "../../contexts/auth-context";
+import { Header } from "../../components/landing/header";
+import { Footer } from "../../components/landing/footer";
 
 function SignInContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [searchParams] = useSearchParams();
-  const redirectUrl = searchParams.get('redirect');
+  const redirectUrl = searchParams.get("redirect");
 
   if (isLoading) {
     return (
@@ -27,7 +27,7 @@ function SignInContent() {
 
   if (isAuthenticated) {
     // Redirect to the originally requested URL or dashboard
-    const destination = redirectUrl || '/dashboard';
+    const destination = redirectUrl || "/dashboard";
     return <Navigate to={destination} replace />;
   }
 

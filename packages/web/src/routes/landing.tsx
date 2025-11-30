@@ -1,7 +1,7 @@
-import { Header } from '../components/landing/header';
-import { HeroSection } from '../components/landing/hero-section';
-import { Footer } from '../components/landing/footer';
-import { AuthProvider } from '../contexts/auth-context';
+import { Header } from "../components/landing/header";
+import { HeroSection } from "../components/landing/hero-section";
+import { Footer } from "../components/landing/footer";
+import { AuthProvider } from "../contexts/auth-context";
 
 export function Component() {
   return (

@@ -67,9 +67,7 @@ export function Mosaic({
               key={index}
               className={cn(
                 "bg-transparent min-h-0 min-w-0 overflow-hidden",
-                isSinglePaneLayout
-                  ? "h-full md:h-full"
-                  : "h-full md:h-auto",
+                isSinglePaneLayout ? "h-full md:h-full" : "h-full md:h-auto",
                 isSinglePaneLayout && index !== currentPaneIndex && "hidden",
               )}
             >

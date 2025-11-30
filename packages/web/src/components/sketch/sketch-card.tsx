@@ -1,5 +1,5 @@
-import { SketchListItem } from '../../lib/sketch-schema';
-import { formatDistanceToNow } from '../../lib/date-utils';
+import { SketchListItem } from "../../lib/sketch-schema";
+import { formatDistanceToNow } from "../../lib/date-utils";
 
 interface SketchCardProps {
   sketch: SketchListItem;
@@ -10,10 +10,10 @@ interface SketchCardProps {
 export function SketchCard({ sketch, onOpen, onDelete }: SketchCardProps) {
   const { value } = sketch;
   const createdAt = value.createdAt ? new Date(value.createdAt) : new Date();
-  
+
   // Get unique targets from panes
-  const targets = value.panes 
-    ? [...new Set(value.panes.map(p => p.target))]
+  const targets = value.panes
+    ? [...new Set(value.panes.map((p) => p.target))]
     : [];
 
   return (
@@ -21,7 +21,7 @@ export function SketchCard({ sketch, onOpen, onDelete }: SketchCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-medium text-stone-900 truncate">
-            {value.name || 'Untitled Sketch'}
+            {value.name || "Untitled Sketch"}
           </h3>
           <p className="mt-1 text-sm text-stone-500">
             {formatDistanceToNow(createdAt)}
@@ -40,7 +40,7 @@ export function SketchCard({ sketch, onOpen, onDelete }: SketchCardProps) {
           )}
         </div>
       </div>
-      
+
       <div className="mt-4 flex items-center gap-2">
         <button
           onClick={() => onOpen(sketch)}

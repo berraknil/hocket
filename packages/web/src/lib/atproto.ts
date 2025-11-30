@@ -1,27 +1,27 @@
-import { BskyAgent, AtpSessionData } from '@atproto/api';
-import { SketchRecord, SketchPane } from './sketch-schema';
+import { BskyAgent, AtpSessionData } from "@atproto/api";
+import { SketchRecord, SketchPane } from "./sketch-schema";
 
 // Re-export types for convenience
 export type { SketchRecord, SketchPane };
-export type { SketchListItem } from './sketch-schema';
+export type { SketchListItem } from "./sketch-schema";
 
 export interface SessionData extends AtpSessionData {
   service: string;
 }
 
 export const DEFAULT_PDS_SERVICES = [
-  'https://bsky.social',
-  'https://tangled.social',
+  "https://bsky.social",
+  "https://tangled.social",
 ];
 
-export const SKETCH_COLLECTION = 'cc.hocket.sketch';
+export const SKETCH_COLLECTION = "cc.hocket.sketch";
 
 export interface SketchInput {
   name: string;
   description?: string;
   panes: SketchPane[];
   tags?: string[];
-  visibility?: 'public' | 'private';
+  visibility?: "public" | "private";
 }
 
 export async function createAgent(service: string): Promise<BskyAgent> {
@@ -32,7 +32,7 @@ export async function createAgent(service: string): Promise<BskyAgent> {
 export async function loginWithAppPassword(
   service: string,
   identifier: string,
-  password: string
+  password: string,
 ): Promise<SessionData> {
   const agent = await createAgent(service);
   const response = await agent.login({ identifier, password });
@@ -62,20 +62,27 @@ export async function listSketches(agent: BskyAgent, did: string) {
   return response.data.records;
 }
 
-export async function getSketch(agent: BskyAgent, uri: string): Promise<{ uri: string; cid: string; value: SketchRecord }> {
+export async function getSketch(
+  agent: BskyAgent,
+  uri: string,
+): Promise<{ uri: string; cid: string; value: SketchRecord }> {
   const response = await agent.com.atproto.repo.getRecord({
-    repo: uri.split('/')[2],
+    repo: uri.split("/")[2],
     collection: SKETCH_COLLECTION,
-    rkey: uri.split('/')[4],
+    rkey: uri.split("/")[4],
   });
 
-  return response.data as unknown as { uri: string; cid: string; value: SketchRecord };
+  return response.data as unknown as {
+    uri: string;
+    cid: string;
+    value: SketchRecord;
+  };
 }
 
 export async function createSketch(
   agent: BskyAgent,
   did: string,
-  sketch: SketchInput
+  sketch: SketchInput,
 ) {
   const now = new Date().toISOString();
   const response = await agent.com.atproto.repo.createRecord({
@@ -91,7 +98,7 @@ export async function createSketch(
         order: pane.order ?? index,
       })),
       tags: sketch.tags,
-      visibility: sketch.visibility || 'public',
+      visibility: sketch.visibility || "public",
       createdAt: now,
       updatedAt: now,
     },
@@ -103,15 +110,15 @@ export async function createSketch(
 export async function updateSketch(
   agent: BskyAgent,
   uri: string,
-  sketch: SketchInput
+  sketch: SketchInput,
 ) {
-  const parts = uri.split('/');
+  const parts = uri.split("/");
   const repo = parts[2];
   const rkey = parts[4];
 
   // Get existing record to preserve createdAt
   const existing = await getSketch(agent, uri);
-  
+
   const response = await agent.com.atproto.repo.putRecord({
     repo,
     collection: SKETCH_COLLECTION,
@@ -126,7 +133,7 @@ export async function updateSketch(
         order: pane.order ?? index,
       })),
       tags: sketch.tags,
-      visibility: sketch.visibility || 'public',
+      visibility: sketch.visibility || "public",
       createdAt: existing.value.createdAt,
       updatedAt: new Date().toISOString(),
     },
@@ -136,7 +143,7 @@ export async function updateSketch(
 }
 
 export async function deleteSketch(agent: BskyAgent, uri: string) {
-  const parts = uri.split('/');
+  const parts = uri.split("/");
   const repo = parts[2];
   const rkey = parts[4];
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { generateSketchName } from '../../lib/utils';
+import { useState } from "react";
+import { generateSketchName } from "../../lib/utils";
 
 interface SaveSketchDialogProps {
   isOpen: boolean;
@@ -18,20 +18,20 @@ export function SaveSketchDialog({
 }: SaveSketchDialogProps) {
   const [name, setName] = useState(defaultName || generateSketchName());
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await onSave(name);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save sketch');
+      setError(err instanceof Error ? err.message : "Failed to save sketch");
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +39,7 @@ export function SaveSketchDialog({
 
   const handleClose = () => {
     if (!isLoading) {
-      setError('');
+      setError("");
       onClose();
     }
   };
@@ -56,7 +56,7 @@ export function SaveSketchDialog({
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <h3 className="text-lg font-semibold leading-6 text-stone-900 mb-4">
-                {isUpdate ? 'Update Sketch' : 'Save Sketch'}
+                {isUpdate ? "Update Sketch" : "Save Sketch"}
               </h3>
 
               <div className="mb-4">
@@ -91,7 +91,7 @@ export function SaveSketchDialog({
                 disabled={isLoading || !name.trim()}
                 className="inline-flex w-full justify-center rounded-md bg-stone-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-stone-700 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Saving...' : isUpdate ? 'Update' : 'Save'}
+                {isLoading ? "Saving..." : isUpdate ? "Update" : "Save"}
               </button>
               <button
                 type="button"
