@@ -87,6 +87,7 @@ export class Session {
   _userColor: UserColor;
   _providers: Provider[];
   _extraSignalingServers: string[];
+  _subscribedTargets: Set<string> = new Set();
 
   _idbProvider: IndexeddbPersistence;
   _webrtcProvider: WebrtcProvider;
@@ -251,6 +252,7 @@ export class Session {
     );
     this._synced = false;
     this._initialized = false;
+    this._subscribedTargets.clear();
     this._pubSubClient.destroy();
     if (this._wsProvider && this._wsProvider.wsconnected)
       this._wsProvider.destroy();
@@ -291,6 +293,7 @@ export class Session {
           this._synced = true;
           this._emitter.emit("sync", "indexeddb");
           debug("Synced first with IndexedDB");
+          this._subscribeToExistingTargets();
         }
       });
     }
@@ -305,6 +308,7 @@ export class Session {
           this._synced = true;
           this._emitter.emit("sync", "webrtc");
           debug("Synced first with WebRTC");
+          this._subscribeToExistingTargets();
         }
       });
     }
@@ -321,6 +325,7 @@ export class Session {
           this._synced = true;
           this._emitter.emit("sync", "websocket");
           debug("Synced first with WebSockets");
+          this._subscribeToExistingTargets();
         }
       });
       this._wsProvider.on("status", ({ status }) => {
@@ -333,6 +338,18 @@ export class Session {
         }
       });
     }
+  }
+
+  // Subscribe to all existing targets in the Y.Map
+  // This is needed because the observer only fires for NEW changes,
+  // not for existing values when a user joins an existing session
+  _subscribeToExistingTargets() {
+    const targets = this._yTargets();
+    const uniqueTargets = new Set(targets.values());
+    uniqueTargets.forEach((target) => {
+      debug(`Subscribing to existing target: ${target}`);
+      this._subscribeToTarget(target);
+    });
   }
 
   _preparePubSub() {
@@ -358,6 +375,13 @@ export class Session {
 
   _subscribeToTarget(target: string) {
     if (!this._pubSubClient) return;
+
+    // Skip if already subscribed to this target
+    if (this._subscribedTargets.has(target)) {
+      debug(`Already subscribed to target: ${target}`);
+      return;
+    }
+    this._subscribedTargets.add(target);
 
     // Subscribe to messages directed to a specific target
     this._pubSubClient.subscribe(
@@ -410,6 +434,7 @@ export class Session {
   }
 
   _unsubscribeTarget(target: string) {
+    this._subscribedTargets.delete(target);
     const topics = [
       `session:${this.name}:target:${target}:eval`,
       `session:${this.name}:target:${target}:out`,
