@@ -72,8 +72,10 @@ test.describe("Global Keyboard Shortcuts", () => {
     // Press Ctrl+Shift+.
     await page.keyboard.press("Control+Shift+.");
 
-    // Should show panic toast
-    await expect(page.locator("text=Panic!")).toBeVisible({ timeout: 5000 });
+    // Should show panic toast (use first() to handle multiple matches)
+    await expect(page.getByText("Panic!", { exact: true }).first()).toBeVisible(
+      { timeout: 5000 },
+    );
   });
 
   test("should toggle messages with Ctrl+,", async ({ page }) => {
@@ -274,8 +276,10 @@ test.describe("macOS Shortcuts (Meta key)", () => {
     // Press Meta+Shift+.
     await page.keyboard.press("Meta+Shift+.");
 
-    // Should show panic toast
-    await expect(page.locator("text=Panic!")).toBeVisible({ timeout: 5000 });
+    // Should show panic toast (use first() to avoid strict mode violation)
+    await expect(page.getByText("Panic!", { exact: true }).first()).toBeVisible(
+      { timeout: 5000 },
+    );
   });
 });
 

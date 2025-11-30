@@ -26,9 +26,14 @@ test.describe("Accessibility - ARIA and Semantic HTML", () => {
     const header = page.locator("header");
     await expect(header).toBeVisible();
 
-    // Links should be accessible
+    // Links should be accessible - check links visible to unauthenticated users
     await expect(page.locator('header a[href="/"]')).toBeVisible();
-    await expect(page.locator('header a[href="/dashboard"]')).toBeVisible();
+    // Playground link should be visible (uses dynamic session name)
+    await expect(
+      page.locator("header a").filter({ hasText: "Playground" }),
+    ).toBeVisible();
+    // Sign In link should be visible when not authenticated
+    await expect(page.locator('header a[href="/auth/sign-in"]')).toBeVisible();
   });
 
   test("should have accessible buttons with proper text", async ({ page }) => {
@@ -182,6 +187,35 @@ test.describe("Responsive Design", () => {
       active: true,
       service: "https://bsky.social",
     };
+
+    // Mock the ATProto API calls
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else if (url.includes("com.atproto.repo.listRecords")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ records: [], cursor: null }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
 
     await page.setViewportSize({ width: 375, height: 667 });
 
