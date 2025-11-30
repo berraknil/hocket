@@ -1,5 +1,49 @@
 # Development Log
 
+## 2025-11-30: Auto-Fork Sketches for Non-Owners
+
+### Problem
+Several permission issues with collaborative sketches:
+
+1. When non-owner opens sketch via link, nothing saved to their dashboard
+2. When non-owner clicks Save, it created a new sketch making them owner instead of creating a fork
+3. Save button kept asking for name instead of auto-updating existing sketch
+
+### Solution
+Auto-create fork IMMEDIATELY when non-owner opens a sketch via link.
+
+#### New Flow
+1. User A creates sketch → saved to A's PDS as `role: "owner"`
+2. User A shares link → `?sketch=at://A/cc.hocket.sketch/xyz`
+3. User B opens link (signed in) → **auto-creates fork on B's PDS immediately**
+   - `role: "editor"`
+   - `forkedFrom: at://A/cc.hocket.sketch/xyz`
+   - `name: "Fork of [original name]"`
+   - Toast: "Fork created - saved to your account"
+4. User B sees sketch in their dashboard immediately
+5. User B clicks Save → updates their fork (no dialog, no name prompt)
+
+#### Technical Changes
+- Moved fork creation from `handleSaveSketch` to `loadSketch` effect
+- Fork is created as soon as sketch loads (before any user interaction)
+- Save button now always updates existing `currentSketchUri` (either original or fork)
+- Preserved `role` and `forkedFrom` fields on updates
+
+### Hydra Sync Clarification
+Code sync (Y.js) and eval sync (PubSub) are separate:
+- Code text changes sync automatically via Y.js ✅
+- Visual evaluation only syncs when Ctrl+Enter is pressed via PubSub ✅
+- This is by design - you see code changes immediately but must evaluate to see visuals
+
+### Files Modified
+- `packages/web/src/routes/session.tsx`: Auto-fork on load, simplified save logic
+
+### Testing
+- Build passes ✅
+- 150/151 E2E tests pass ✅
+
+---
+
 ## 2025-11-30: Sketch Ownership and Fork Permissions
 
 ### Problem
