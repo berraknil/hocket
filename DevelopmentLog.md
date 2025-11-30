@@ -1,5 +1,53 @@
 # Development Log
 
+## 2025-11-30: Fix Hydra Eval Sync for Joining Users
+
+### Problem
+When User A presses Ctrl+Enter to evaluate Hydra code, User B doesn't see the visual change. Strudel worked correctly but Hydra didn't sync.
+
+### Root Cause Analysis
+Traced the complete eval flow:
+1. User presses Ctrl+Enter → `doc.evaluate()` with `mode: "web"`
+2. Session publishes to `session:${name}:target:hydra:eval` via PubSub
+3. Other users receive message via PubSub subscription
+4. Session emits `eval:hydra` event
+5. `WebTargetIframe` posts message to Hydra iframe
+6. Hydra iframe evaluates code
+
+**The bug was in step 3**: The PubSub subscription happens in `_subscribeToTarget()`, which is only called when the Y.Map `observe` callback fires. However, Y.Map `observe` only fires for **NEW changes**, not for existing values when a user joins.
+
+So when User B joins a session where Hydra is already set up:
+- Y.js syncs the document (code text appears)
+- But the observer doesn't fire for existing targets
+- User B never subscribes to `session:${name}:target:hydra:eval`
+- User B never receives eval messages from User A
+
+### Solution
+Added `_subscribeToExistingTargets()` method that runs on first sync:
+
+```typescript
+_subscribeToExistingTargets() {
+  const targets = this._yTargets();
+  const uniqueTargets = new Set(targets.values());
+  uniqueTargets.forEach((target) => {
+    this._subscribeToTarget(target);
+  });
+}
+```
+
+Called from each provider's "synced" event handler.
+
+Also added `_subscribedTargets: Set<string>` to track subscriptions and prevent duplicates.
+
+### Files Modified
+- `packages/session/lib/session.ts`: Added sync-time subscription to existing targets
+
+### Testing
+- Build passes ✅
+- 150/151 E2E tests pass ✅
+
+---
+
 ## 2025-11-30: Auto-Fork Sketches for Non-Owners
 
 ### Problem
