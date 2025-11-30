@@ -286,33 +286,58 @@ function SessionContent() {
 
           console.log("Setting sketch panes:", sortedPanes);
 
-          // Set active documents with targets from sketch
-          session.setActiveDocuments(
-            sortedPanes.map((pane, i) => ({
-              id: String(i + 1),
-              target: pane.target,
-            })),
+          // Check if Y.js session already has content (returning to same session)
+          const existingDocs = session.getDocuments();
+          const hasExistingContent = existingDocs.some(
+            (doc) => doc.content && doc.content.trim().length > 0,
           );
 
-          // Wait for Yjs to create documents, then set content
-          // Use a longer delay to ensure documents are ready
-          setTimeout(() => {
-            const docs = session.getDocuments();
+          if (hasExistingContent) {
             console.log(
-              "Setting content for",
-              docs.length,
-              "documents from sketch",
+              "Session already has content from Y.js, skipping PDS content load",
             );
-            sortedPanes.forEach((pane, i) => {
-              if (docs[i]) {
-                docs[i].content = pane.content;
-                console.log(`Set pane ${i} (${pane.target}) content`);
-              }
-            });
+            // Just update the last saved content ref for auto-save tracking
+            const currentPanes: SketchPane[] = existingDocs.map(
+              (doc, index) => ({
+                target: doc.target,
+                content: doc.content,
+                order: index,
+              }),
+            );
+            lastSavedContentRef.current = JSON.stringify(currentPanes);
+          } else {
+            console.log("Session is empty, loading content from PDS sketch...");
+            // Set active documents with targets from sketch
+            session.setActiveDocuments(
+              sortedPanes.map((pane, i) => ({
+                id: String(i + 1),
+                target: pane.target,
+              })),
+            );
 
-            // Update last saved content to prevent immediate auto-save
-            lastSavedContentRef.current = JSON.stringify(sortedPanes);
-          }, 200);
+            // Wait for Yjs to create documents, then set content
+            // Use a longer delay to ensure documents are ready
+            setTimeout(() => {
+              const docs = session.getDocuments();
+              console.log(
+                "Setting content for",
+                docs.length,
+                "documents from sketch",
+              );
+              sortedPanes.forEach((pane, i) => {
+                if (docs[i]) {
+                  docs[i].content = pane.content;
+                  console.log(
+                    `Set pane ${i} (${pane.target}) content:`,
+                    pane.content.substring(0, 50) + "...",
+                  );
+                }
+              });
+
+              // Update last saved content to prevent immediate auto-save
+              lastSavedContentRef.current = JSON.stringify(sortedPanes);
+            }, 300);
+          }
         }
 
         toast({
@@ -662,6 +687,7 @@ function SessionContent() {
 
         const result = await createSketch(agent, authSession.did, {
           name: sketchName,
+          sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
         });
@@ -938,6 +964,7 @@ function SessionContent() {
         // Update existing sketch
         await updateSketch(agent, currentSketchUri, {
           name: sketchName,
+          sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
         });
@@ -946,6 +973,7 @@ function SessionContent() {
         // Create new sketch
         const result = await createSketch(agent, authSession.did, {
           name: sketchName,
+          sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
         });

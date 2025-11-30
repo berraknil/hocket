@@ -18,7 +18,8 @@ function DashboardContent() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleOpenSketch = (sketch: SketchListItem) => {
-    const sessionName = generateRandomSessionName();
+    // Use the stored sessionName if available, otherwise generate a new one
+    const sessionName = sketch.value.sessionName || generateRandomSessionName();
     navigate(`/s/${sessionName}?sketch=${encodeURIComponent(sketch.uri)}`);
   };
 

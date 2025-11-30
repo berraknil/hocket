@@ -1,5 +1,40 @@
 # Development Log
 
+## 2025-11-30: Session Name Persistence for Sketches
+
+### Problem
+When opening a saved sketch from the dashboard, the sketch content was still lost. The previous fix addressed race conditions but the fundamental issue remained:
+
+1. Dashboard was generating a NEW random session name every time a sketch was opened
+2. Y.js sessions are tied to session names - different name = different Y.js document
+3. Content was saved to PDS but Y.js session was always empty on reload
+
+### Solution
+Added `sessionName` field to sketch records so sketches remember their Flok session:
+
+1. **Schema changes**: Added `sessionName` to `SketchRecord` and `SketchInput` interfaces
+2. **Create/Update**: Store current session name when saving sketches
+3. **Dashboard**: Use stored `sessionName` when opening sketch (fallback to random if not set)
+4. **Load logic**: Check if Y.js already has content before loading from PDS
+
+### Files Modified
+- `packages/web/src/lib/sketch-schema.ts`: Added `sessionName` field
+- `packages/web/src/lib/atproto.ts`: Include `sessionName` in create/update
+- `packages/web/src/routes/dashboard.tsx`: Use stored sessionName when opening
+- `packages/web/src/routes/session.tsx`: 
+  - Pass sessionName when creating/saving
+  - Check for existing Y.js content before overwriting
+
+### How it works now
+1. User creates session `/s/foo` → sketch saved with `sessionName: "foo"`
+2. User edits, auto-save updates PDS
+3. User leaves, returns via dashboard
+4. Dashboard opens `/s/foo?sketch=uri` (same session name!)
+5. Y.js syncs → content already there from session `foo`
+6. Sketch load detects existing content → skips PDS overwrite
+
+---
+
 ## 2025-11-30: Fix Sketch Loading Race Condition
 
 ### Problem

@@ -19,6 +19,7 @@ export const SKETCH_COLLECTION = "cc.hocket.sketch";
 export interface SketchInput {
   name: string;
   description?: string;
+  sessionName?: string; // Flok session name for persistence
   panes: SketchPane[];
   tags?: string[];
   visibility?: "public" | "private";
@@ -92,6 +93,7 @@ export async function createSketch(
       $type: SKETCH_COLLECTION,
       name: sketch.name,
       description: sketch.description,
+      sessionName: sketch.sessionName,
       panes: sketch.panes.map((pane, index) => ({
         target: pane.target,
         content: pane.content,
@@ -116,7 +118,7 @@ export async function updateSketch(
   const repo = parts[2];
   const rkey = parts[4];
 
-  // Get existing record to preserve createdAt
+  // Get existing record to preserve createdAt and sessionName
   const existing = await getSketch(agent, uri);
 
   const response = await agent.com.atproto.repo.putRecord({
@@ -127,6 +129,7 @@ export async function updateSketch(
       $type: SKETCH_COLLECTION,
       name: sketch.name,
       description: sketch.description,
+      sessionName: sketch.sessionName || existing.value.sessionName,
       panes: sketch.panes.map((pane, index) => ({
         target: pane.target,
         content: pane.content,

@@ -10,6 +10,7 @@ export interface SketchRecord {
   $type?: string;
   name: string;
   description?: string;
+  sessionName?: string; // Flok session name for persistence
   panes: SketchPane[];
   tags?: string[];
   visibility?: "public" | "private";
