@@ -50,10 +50,10 @@ export function Mosaic({
   const gridClasses = getGridClasses(items.length);
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <div
         className={cn(
-          "grid gap-1 p-1 h-screen overflow-hidden",
+          "grid gap-1 p-1 h-full overflow-hidden",
           isSinglePaneLayout
             ? "overflow-y-auto md:overflow-y-auto"
             : "overflow-y-auto md:overflow-y-hidden",
@@ -68,8 +68,8 @@ export function Mosaic({
               className={cn(
                 "bg-transparent min-h-0 min-w-0 overflow-hidden",
                 isSinglePaneLayout
-                  ? "h-screen md:h-screen"
-                  : "h-screen md:h-auto",
+                  ? "h-full md:h-full"
+                  : "h-full md:h-auto",
                 isSinglePaneLayout && index !== currentPaneIndex && "hidden",
               )}
             >
