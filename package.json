@@ -1,10 +1,10 @@
 {
   "name": "hocket",
-  "description": "Live coding editor with ATproto sketch persistence",
+  "description": "Collaborative Live Coding Proudly Federated on ATProto",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/hocket.git"
+    "url": "git+https://github.com/berraknil/hocket.git"
   },
   "scripts": {
     "build": "lerna run build",
@@ -19,12 +19,12 @@
     "live-coding",
     "collaborative-editing"
   ],
-  "author": "Damián Silvani <munshkr@gmail.com>",
+  "author": "Berrak Nil Boya <berraknil@gmail.com>",
   "license": "GPL-3.0+",
   "bugs": {
-    "url": "https://codeberg.org/munshkr/flok/issues"
+    "url": "https://github.com/berraknil/hocket/issues"
   },
-  "homepage": "https://codeberg.org/munshkr/flok#readme",
+  "homepage": "https://hocket.fly.dev/",
   "devDependencies": {
     "lerna": "^6.5.1"
   },

@@ -2,7 +2,7 @@
   "name": "hocket-web",
   "version": "1.0.0",
   "description": "Web application for Hocket",
-  "author": "Your Name <your@email.com>",
+  "author": "Berrak Nil Boya <berraknil@gmail.com>",
   "license": "GPL-3.0+",
   "type": "module",
   "bin": "./bin/flok-web.js",
