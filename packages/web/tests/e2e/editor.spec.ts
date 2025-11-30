@@ -14,8 +14,8 @@ test.describe("Editor Functionality", () => {
     await page.keyboard.press("Control+a");
     await page.keyboard.type("// test code");
 
-    // Verify the code appears
-    await expect(page.locator("text=// test code")).toBeVisible();
+    // Verify the code appears (use getByText to avoid regex issues with //)
+    await expect(page.getByText("// test code")).toBeVisible();
   });
 
   test("should evaluate code with Ctrl+Enter", async ({ page }) => {
@@ -119,8 +119,8 @@ test.describe("Editor Functionality", () => {
     // Wait for content to load
     await page.waitForTimeout(2000);
 
-    // Content should persist
-    await expect(page.locator("text=// persistent test data")).toBeVisible({
+    // Content should persist (use getByText to avoid regex issues with //)
+    await expect(page.getByText("// persistent test data")).toBeVisible({
       timeout: 10000,
     });
   });

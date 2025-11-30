@@ -7,10 +7,10 @@ test.describe("Landing Page", () => {
     await expect(page.locator("text=ALGORAVE")).toBeVisible();
     await expect(page.locator("text=but make it")).toBeVisible();
     await expect(page.locator("text=online")).toBeVisible();
-    await expect(page.locator("text=Built on top of AtProto")).toBeVisible();
+    await expect(page.getByText("Built on top of AtProto")).toBeVisible();
     await expect(
-      page.locator(
-        "text=Collaborative live coding in the browser, built on AtProto",
+      page.getByText(
+        "Collaborative live coding in the browser, built on AtProto",
       ),
     ).toBeVisible();
   });
@@ -25,8 +25,12 @@ test.describe("Landing Page", () => {
   test("should display navigation links in header", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.locator('header a[href="/dashboard"]')).toBeVisible();
-    await expect(page.locator('header a:has-text("Playground")')).toBeVisible();
+    // Playground link should be visible (uses dynamic session name)
+    await expect(
+      page.locator("header a").filter({ hasText: "Playground" }),
+    ).toBeVisible();
+    // Sign In link should be visible when not authenticated
+    await expect(page.locator('header a[href="/auth/sign-in"]')).toBeVisible();
   });
 
   test("should display features on hero section", async ({ page }) => {
@@ -95,6 +99,29 @@ test.describe("Landing Page", () => {
       service: "https://bsky.social",
     };
 
+    // Mock the ATProto API calls
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
+
     // Set localStorage before page navigation
     await page.goto("/");
     await page.evaluate((session) => {
@@ -120,6 +147,29 @@ test.describe("Landing Page", () => {
       active: true,
       service: "https://bsky.social",
     };
+
+    // Mock the ATProto API calls
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
 
     await page.goto("/");
     await page.evaluate((session) => {
@@ -170,6 +220,52 @@ test.describe("Dashboard", () => {
     service: "https://bsky.social",
   };
 
+  // Helper function to setup authenticated state with API mocking
+  async function setupAuthenticatedState(
+    page: import("@playwright/test").Page,
+  ) {
+    // Mock the ATProto API calls to avoid actual network requests
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        // Mock getSession response
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else if (url.includes("com.atproto.repo.listRecords")) {
+        // Mock listRecords response (empty sketches list)
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            records: [],
+            cursor: null,
+          }),
+        });
+      } else {
+        // Let other requests through or mock as needed
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
+
+    // Set localStorage before navigating
+    await page.goto("/");
+    await page.evaluate((session) => {
+      localStorage.setItem("hocket-session", JSON.stringify(session));
+    }, mockSession);
+  }
+
   test("should redirect to sign-in when not authenticated", async ({
     page,
   }) => {
@@ -178,11 +274,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should display dashboard when authenticated", async ({ page }) => {
-    // Set localStorage before navigating
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
@@ -190,14 +282,11 @@ test.describe("Dashboard", () => {
     await expect(page.locator("h1")).toContainText("Your Sketches", {
       timeout: 10000,
     });
-    await expect(page.locator("text=test.bsky.social")).toBeVisible();
+    await expect(page.getByText("test.bsky.social")).toBeVisible();
   });
 
   test("should display New Sketch button", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
@@ -210,10 +299,7 @@ test.describe("Dashboard", () => {
   test("should navigate to new session when clicking New Sketch", async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
@@ -223,27 +309,21 @@ test.describe("Dashboard", () => {
   });
 
   test("should show empty state when no sketches", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("text=No sketches")).toBeVisible({
+    await expect(page.getByText("No sketches")).toBeVisible({
       timeout: 10000,
     });
     await expect(
-      page.locator("text=Get started by creating a new sketch"),
+      page.getByText("Get started by creating a new sketch"),
     ).toBeVisible();
   });
 
   test("should sign out and redirect to landing page", async ({ page }) => {
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
@@ -260,15 +340,14 @@ test.describe("Dashboard", () => {
   test("should display Hocket link that goes to landing page", async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.evaluate((session) => {
-      localStorage.setItem("hocket-session", JSON.stringify(session));
-    }, mockSession);
+    await setupAuthenticatedState(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    const hocketLink = page.locator('a[href="/"]', { hasText: "Hocket" });
+    const hocketLink = page
+      .locator('a[href="/"]')
+      .filter({ hasText: /H0CK3T|HOCKET/ });
     await expect(hocketLink).toBeVisible({ timeout: 10000 });
   });
 });
@@ -344,6 +423,35 @@ test.describe("Authentication Flow", () => {
       active: true,
       service: "https://bsky.social",
     };
+
+    // Mock the ATProto API calls
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else if (url.includes("com.atproto.repo.listRecords")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ records: [], cursor: null }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
 
     // Set session first
     await page.goto("/");

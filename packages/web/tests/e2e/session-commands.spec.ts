@@ -251,12 +251,10 @@ test.describe("Panic Command", () => {
     // Press panic shortcut
     await page.keyboard.press("Control+Shift+.");
 
-    // Should show panic toast
-    await expect(
-      page
-        .locator('[role="status"]:has-text("Panic!")')
-        .or(page.locator('.text-sm:has-text("Panic!")').first()),
-    ).toBeVisible({ timeout: 5000 });
+    // Should show panic toast (use first() to handle multiple matches)
+    await expect(page.getByText("Panic!", { exact: true }).first()).toBeVisible(
+      { timeout: 5000 },
+    );
   });
 });
 

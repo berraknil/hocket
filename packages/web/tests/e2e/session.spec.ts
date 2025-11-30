@@ -98,6 +98,35 @@ test.describe("Session Save/Download Functionality", () => {
   test("should show save option in command dialog when authenticated", async ({
     page,
   }) => {
+    // Mock the ATProto API calls
+    await page.route("**/xrpc/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("com.atproto.server.getSession")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            did: mockSession.did,
+            handle: mockSession.handle,
+            active: true,
+          }),
+        });
+      } else if (url.includes("com.atproto.repo.listRecords")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ records: [], cursor: null }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({}),
+        });
+      }
+    });
+
     // Set up authenticated session before navigation
     await page.goto("/");
     await page.evaluate((session) => {
@@ -129,9 +158,9 @@ test.describe("Session Save/Download Functionality", () => {
     await page.waitForTimeout(500);
 
     // Should show save to ATproto option
-    await expect(
-      page.locator('[cmdk-item]:has-text("Save to ATproto")'),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Save to ATproto")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should show download option in command dialog", async ({ page }) => {
