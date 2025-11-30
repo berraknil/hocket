@@ -1,5 +1,29 @@
 # Development Log
 
+## 2025-11-30: Fix Verify Script for Dockerfile Checks
+
+### Problem
+The `verify-deployment.js` script was failing with false positives:
+- "Dockerfile missing server-middleware package.json copy"
+- "Dockerfile missing pubsub package.json copy"
+
+### Root Cause
+The verify script was looking for exact string `server-middleware/package.json` but the Dockerfile copies entire directories with `COPY --from=builder /app/packages/server-middleware`, which includes package.json.
+
+### Solution
+Updated verify script to check for either explicit package.json copy OR directory copy pattern.
+
+### Files Modified
+- `scripts/verify-deployment.js`: Updated string matching logic
+- `Dockerfile`: Added clarifying comments
+
+### Testing
+- Verify script passes ✅
+- Build passes ✅
+- 150/151 E2E tests pass ✅
+
+---
+
 ## 2025-11-30: Fix Hydra Eval Sync for Joining Users
 
 ### Problem

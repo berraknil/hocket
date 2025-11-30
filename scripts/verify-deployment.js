@@ -143,13 +143,13 @@ if (dockerfile.includes('COPY --from=builder /app/packages/web/server.js')) {
   error('Dockerfile missing server.js copy');
 }
 
-if (dockerfile.includes('server-middleware/package.json')) {
+if (dockerfile.includes('server-middleware/package.json') || dockerfile.includes('/app/packages/server-middleware')) {
   log('Dockerfile copies server-middleware package.json');
 } else {
   error('Dockerfile missing server-middleware package.json copy');
 }
 
-if (dockerfile.includes('pubsub/package.json')) {
+if (dockerfile.includes('pubsub/package.json') || dockerfile.includes('/app/packages/pubsub')) {
   log('Dockerfile copies pubsub package.json');
 } else {
   error('Dockerfile missing pubsub package.json copy');
