@@ -66,6 +66,10 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
       name,
       panes,
       visibility: "public",
+      // Set owner fields - this user is the owner
+      ownerDid: session.did,
+      ownerHandle: session.handle,
+      role: "owner",
     });
 
     await refreshSketches();
@@ -76,7 +80,7 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
     name: string,
     panes: SketchPane[],
   ) => {
-    if (!agent) {
+    if (!agent || !session) {
       throw new Error("Not authenticated");
     }
 
@@ -84,6 +88,10 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
       name,
       panes,
       visibility: "public",
+      // These are required but will be preserved from existing record
+      ownerDid: session.did,
+      ownerHandle: session.handle,
+      role: "owner",
     });
 
     await refreshSketches();

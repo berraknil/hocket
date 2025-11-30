@@ -23,6 +23,12 @@ export interface SketchInput {
   panes: SketchPane[];
   tags?: string[];
   visibility?: "public" | "private";
+
+  // Ownership & permissions
+  ownerDid: string; // DID of original creator
+  ownerHandle: string; // Handle at time of creation
+  role: "owner" | "editor"; // This record holder's role
+  forkedFrom?: string; // URI of original sketch (if fork)
 }
 
 export async function createAgent(service: string): Promise<BskyAgent> {
@@ -101,6 +107,11 @@ export async function createSketch(
       })),
       tags: sketch.tags,
       visibility: sketch.visibility || "public",
+      // Ownership & permissions
+      ownerDid: sketch.ownerDid,
+      ownerHandle: sketch.ownerHandle,
+      role: sketch.role,
+      forkedFrom: sketch.forkedFrom,
       createdAt: now,
       updatedAt: now,
     },
@@ -118,7 +129,7 @@ export async function updateSketch(
   const repo = parts[2];
   const rkey = parts[4];
 
-  // Get existing record to preserve createdAt and sessionName
+  // Get existing record to preserve createdAt, sessionName, and ownership fields
   const existing = await getSketch(agent, uri);
 
   const response = await agent.com.atproto.repo.putRecord({
@@ -137,6 +148,11 @@ export async function updateSketch(
       })),
       tags: sketch.tags,
       visibility: sketch.visibility || "public",
+      // Preserve ownership fields from existing record (immutable)
+      ownerDid: existing.value.ownerDid,
+      ownerHandle: existing.value.ownerHandle,
+      role: existing.value.role,
+      forkedFrom: existing.value.forkedFrom,
       createdAt: existing.value.createdAt,
       updatedAt: new Date().toISOString(),
     },

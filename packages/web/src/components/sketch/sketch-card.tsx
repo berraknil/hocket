@@ -1,5 +1,6 @@
 import { SketchListItem } from "../../lib/sketch-schema";
 import { formatDistanceToNow } from "../../lib/date-utils";
+import { Crown, GitFork } from "lucide-react";
 
 interface SketchCardProps {
   sketch: SketchListItem;
@@ -16,16 +17,38 @@ export function SketchCard({ sketch, onOpen, onDelete }: SketchCardProps) {
     ? [...new Set(value.panes.map((p) => p.target))]
     : [];
 
+  // Determine if this is an owner sketch or a fork
+  const isOwner = value.role === "owner" || !value.role; // Default to owner for legacy sketches
+  const isFork = value.role === "editor";
+
   return (
     <div className="group relative bg-white rounded-lg border border-stone-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-medium text-stone-900 truncate">
-            {value.name || "Untitled Sketch"}
-          </h3>
+          <div className="flex items-center gap-2">
+            {/* Owner/Fork indicator */}
+            {isOwner ? (
+              <span title="You own this sketch">
+                <Crown className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              </span>
+            ) : isFork ? (
+              <span title="Forked sketch">
+                <GitFork className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              </span>
+            ) : null}
+            <h3 className="text-lg font-medium text-stone-900 truncate">
+              {value.name || "Untitled Sketch"}
+            </h3>
+          </div>
           <p className="mt-1 text-sm text-stone-500">
             {formatDistanceToNow(createdAt)}
           </p>
+          {/* Show forked from info */}
+          {isFork && value.ownerHandle && (
+            <p className="mt-0.5 text-xs text-blue-600">
+              Forked from @{value.ownerHandle}
+            </p>
+          )}
           {targets.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {targets.map((target) => (

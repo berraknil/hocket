@@ -150,6 +150,15 @@ function SessionContent() {
   const [currentSketchUri, setCurrentSketchUri] = useState<string | null>(null);
   const [currentSketchName, setCurrentSketchName] = useState<string>("");
 
+  // Track ownership - if we're editing someone else's sketch, we need to fork on save
+  const [sketchOwnerDid, setSketchOwnerDid] = useState<string | null>(null);
+  const [sketchOwnerHandle, setSketchOwnerHandle] = useState<string | null>(
+    null,
+  );
+  const [originalSketchUri, setOriginalSketchUri] = useState<string | null>(
+    null,
+  ); // For tracking forkedFrom
+
   // Track if sketch content has been loaded from PDS (to prevent auto-save race)
   const sketchLoadedRef = useRef(false);
 
@@ -165,6 +174,10 @@ function SessionContent() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle",
   );
+
+  // Computed: is the current user the owner of this sketch?
+  const isSketchOwner =
+    !sketchOwnerDid || (authSession && sketchOwnerDid === authSession.did);
 
   // Editor settings: Try to restore from local storage or use default settings
   const [editorSettings, setEditorSettings] = useState<EditorSettings>(() => {
@@ -277,8 +290,31 @@ function SessionContent() {
         const record = await getSketch(agent, sketchUri);
         const sketchData = record.value as SketchRecord;
 
-        setCurrentSketchUri(sketchUri);
         setCurrentSketchName(sketchData.name);
+
+        // Store owner info to determine if we need to fork on save
+        setSketchOwnerDid(sketchData.ownerDid || null);
+        setSketchOwnerHandle(sketchData.ownerHandle || null);
+
+        // Check if current user is the owner
+        const isOwner =
+          !sketchData.ownerDid || sketchData.ownerDid === authSession?.did;
+
+        if (isOwner) {
+          // User is the owner - use the existing sketch URI
+          setCurrentSketchUri(sketchUri);
+          setOriginalSketchUri(null);
+        } else {
+          // User is NOT the owner - they'll need to fork on save
+          // Don't set currentSketchUri yet - it will be set when they create their fork
+          setCurrentSketchUri(null);
+          setOriginalSketchUri(sketchUri); // Track the original for forkedFrom
+          console.log(
+            "Loading sketch owned by",
+            sketchData.ownerHandle,
+            "- will fork on save",
+          );
+        }
 
         // Mark auto-save as initialized since we're loading an existing sketch
         autoSaveInitialized.current = true;
@@ -696,6 +732,10 @@ function SessionContent() {
           sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
+          // Set owner fields - this user is the owner
+          ownerDid: authSession.did,
+          ownerHandle: authSession.handle,
+          role: "owner",
         });
 
         setCurrentSketchUri(result.uri);
@@ -756,6 +796,10 @@ function SessionContent() {
           name: currentSketchName || generateSketchName(),
           panes,
           visibility: "public",
+          // These are required but will be preserved from existing record
+          ownerDid: authSession.did,
+          ownerHandle: authSession.handle,
+          role: "owner",
         });
         lastSavedContentRef.current = contentHash;
         console.log("Auto-saved sketch to PDS");
@@ -951,6 +995,8 @@ function SessionContent() {
         authSessionDid: authSession?.did,
         session: !!session,
         isAuthenticated,
+        isSketchOwner,
+        originalSketchUri,
       });
 
       if (!agent || !authSession || !session) {
@@ -967,39 +1013,89 @@ function SessionContent() {
       }));
 
       if (currentSketchUri) {
-        // Update existing sketch
+        // Update existing sketch (user's own sketch or their fork)
         await updateSketch(agent, currentSketchUri, {
           name: sketchName,
           sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
+          // These are required but will be preserved from existing record
+          ownerDid: authSession.did,
+          ownerHandle: authSession.handle,
+          role: "owner",
         });
         setCurrentSketchName(sketchName);
+
+        toast({
+          title: "Sketch saved",
+          description: `"${sketchName}" saved to ATproto`,
+          duration: 3000,
+        });
+      } else if (originalSketchUri && !isSketchOwner) {
+        // Create a FORK - user is editing someone else's sketch
+        const forkName = `Fork of ${sketchName}`;
+        const result = await createSketch(agent, authSession.did, {
+          name: forkName,
+          sessionName: name, // Use same session name for collaboration
+          panes,
+          visibility: "public",
+          // Fork metadata
+          ownerDid: sketchOwnerDid || authSession.did,
+          ownerHandle: sketchOwnerHandle || authSession.handle,
+          role: "editor",
+          forkedFrom: originalSketchUri,
+        });
+        setCurrentSketchUri(result.uri);
+        setCurrentSketchName(forkName);
+        setStoredSketchUri(name, result.uri);
+        autoSaveInitialized.current = true;
+
+        toast({
+          title: "Fork created",
+          description: `"${forkName}" saved to your ATproto`,
+          duration: 3000,
+        });
       } else {
-        // Create new sketch
+        // Create new sketch (user is the owner)
         const result = await createSketch(agent, authSession.did, {
           name: sketchName,
           sessionName: name, // Store the Flok session name
           panes,
           visibility: "public",
+          // Set owner fields - this user is the owner
+          ownerDid: authSession.did,
+          ownerHandle: authSession.handle,
+          role: "owner",
         });
         setCurrentSketchUri(result.uri);
         setCurrentSketchName(sketchName);
         // Store the URI so we can reconnect to this sketch
         setStoredSketchUri(name, result.uri);
         autoSaveInitialized.current = true;
+
+        toast({
+          title: "Sketch saved",
+          description: `"${sketchName}" saved to ATproto`,
+          duration: 3000,
+        });
       }
 
       // Update last saved content to prevent immediate auto-save
       lastSavedContentRef.current = JSON.stringify(panes);
-
-      toast({
-        title: "Sketch saved",
-        description: `"${sketchName}" saved to ATproto`,
-        duration: 3000,
-      });
     },
-    [agent, authSession, session, documents, currentSketchUri, name, toast],
+    [
+      agent,
+      authSession,
+      session,
+      documents,
+      currentSketchUri,
+      originalSketchUri,
+      isSketchOwner,
+      sketchOwnerDid,
+      sketchOwnerHandle,
+      name,
+      toast,
+    ],
   );
 
   // Immediate save without debounce - for manual save button
@@ -1015,8 +1111,18 @@ function SessionContent() {
       return;
     }
 
-    if (!currentSketchUri || documents.length === 0) {
-      // No existing sketch - open the save dialog to create one
+    if (documents.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Nothing to save",
+        description: "Add some code first.",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // If no existing sketch (or user is editing someone else's sketch), open save dialog
+    if (!currentSketchUri) {
       setSaveSketchDialogOpen(true);
       return;
     }
@@ -1041,6 +1147,10 @@ function SessionContent() {
         sessionName: name,
         panes,
         visibility: "public",
+        // These are required but will be preserved from existing record
+        ownerDid: authSession.did,
+        ownerHandle: authSession.handle,
+        role: "owner",
       });
 
       lastSavedContentRef.current = JSON.stringify(panes);
