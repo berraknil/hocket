@@ -18,6 +18,7 @@ import { SaveSketchDialog } from "@/components/sketch/save-sketch-dialog";
 import { Header } from "@/components/landing/header";
 import { Footer } from "@/components/landing/footer";
 import { AuthProvider } from "@/contexts/auth-context";
+import { Save, Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useHash } from "@/hooks/use-hash";
 import { useQuery } from "@/hooks/use-query";
@@ -159,6 +160,11 @@ function SessionContent() {
 
   // Track if session sync is complete
   const [sessionSynced, setSessionSynced] = useState(false);
+
+  // Save button status: 'idle' | 'saving' | 'saved'
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
 
   // Editor settings: Try to restore from local storage or use default settings
   const [editorSettings, setEditorSettings] = useState<EditorSettings>(() => {
@@ -996,6 +1002,79 @@ function SessionContent() {
     [agent, authSession, session, documents, currentSketchUri, name, toast],
   );
 
+  // Immediate save without debounce - for manual save button
+  const saveNow = useCallback(async () => {
+    // Skip if not authenticated or no sketch to save
+    if (!isAuthenticated || !agent || !authSession) {
+      toast({
+        variant: "destructive",
+        title: "Not authenticated",
+        description: "Please sign in to save sketches.",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!currentSketchUri || documents.length === 0) {
+      // No existing sketch - open the save dialog to create one
+      setSaveSketchDialogOpen(true);
+      return;
+    }
+
+    // Clear any pending auto-save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+
+    setSaveStatus("saving");
+
+    try {
+      const panes: SketchPane[] = documents.map((doc, index) => ({
+        target: doc.target,
+        content: doc.content,
+        order: index,
+      }));
+
+      await updateSketch(agent, currentSketchUri, {
+        name: currentSketchName || generateSketchName(),
+        sessionName: name,
+        panes,
+        visibility: "public",
+      });
+
+      lastSavedContentRef.current = JSON.stringify(panes);
+      setSaveStatus("saved");
+
+      toast({
+        title: "Saved",
+        description: "Sketch saved to ATproto",
+        duration: 2000,
+      });
+
+      // Reset to idle after showing "saved" state
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Failed to save sketch:", error);
+      setSaveStatus("idle");
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: "Could not save sketch to ATproto.",
+        duration: 3000,
+      });
+    }
+  }, [
+    isAuthenticated,
+    agent,
+    authSession,
+    currentSketchUri,
+    currentSketchName,
+    documents,
+    name,
+    toast,
+  ]);
+
   // Download sketch as file
   const handleDownloadSketch = useCallback(() => {
     if (!session) return;
@@ -1242,6 +1321,37 @@ function SessionContent() {
                 onHideMessagesOnEvalClick={handleHideMessagesOnEvalClick}
                 onClearMessagesClick={handleClearMessagesClick}
               />
+            )}
+
+            {/* Floating Save Button - bottom right */}
+            {isAuthenticated && !isMobile && (
+              <button
+                onClick={saveNow}
+                disabled={saveStatus === "saving"}
+                className={cn(
+                  "absolute bottom-12 right-4 z-20 flex items-center gap-2 px-3 py-2 rounded-md",
+                  "bg-stone-800/80 hover:bg-stone-700/90 backdrop-blur-sm",
+                  "text-white text-sm font-light transition-all duration-200",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  hidden ? "opacity-0" : "opacity-100",
+                )}
+                title="Save to ATproto (immediate)"
+              >
+                {saveStatus === "saving" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : saveStatus === "saved" ? (
+                  <Check className="w-4 h-4 text-green-400" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>
+                  {saveStatus === "saving"
+                    ? "Saving..."
+                    : saveStatus === "saved"
+                      ? "Saved"
+                      : "Save"}
+                </span>
+              </button>
             )}
 
             <StatusBar
