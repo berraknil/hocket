@@ -53,7 +53,7 @@ export function HeroSection() {
                 </div>
                 <div className="text-[clamp(2rem,8vw,6rem)] font-light leading-[0.9] tracking-[-0.01em] text-stone-600 mt-2">
                   in the{" "}
-                  <div className="italic text-stone-900">ATMOSPHERE</div>
+                  <div className="text-[clamp(2.55rem,10.2vw,7.65rem)] font-extralight leading-[0.9] tracking-[-0.02em] text-stone-900 mt-1">ATMOSPHERE</div>
                 </div>
               </h1>
 
