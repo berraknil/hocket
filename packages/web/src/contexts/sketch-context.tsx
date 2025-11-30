@@ -1,14 +1,14 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { useAuth } from '../hooks/use-auth';
-import { listSketches, createSketch, updateSketch, deleteSketch } from '../lib/atproto';
+import { listSketches, createSketch, updateSketch, deleteSketch, SketchPane } from '../lib/atproto';
 import { SketchListItem } from '../lib/sketch-schema';
 
 interface SketchContextType {
   sketches: SketchListItem[];
   isLoading: boolean;
   refreshSketches: () => Promise<void>;
-  saveSketch: (name: string, content: string) => Promise<void>;
-  updateExistingSketch: (uri: string, name: string, content: string) => Promise<void>;
+  saveSketch: (name: string, panes: SketchPane[]) => Promise<void>;
+  updateExistingSketch: (uri: string, name: string, panes: SketchPane[]) => Promise<void>;
   removeSketch: (uri: string) => Promise<void>;
 }
 
@@ -45,29 +45,29 @@ export function SketchProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated]);
 
-  const saveSketch = async (name: string, content: string) => {
+  const saveSketch = async (name: string, panes: SketchPane[]) => {
     if (!agent || !session) {
       throw new Error('Not authenticated');
     }
 
     await createSketch(agent, session.did, {
       name,
-      content,
-      createdAt: new Date().toISOString(),
+      panes,
+      visibility: 'public',
     });
 
     await refreshSketches();
   };
 
-  const updateExistingSketch = async (uri: string, name: string, content: string) => {
+  const updateExistingSketch = async (uri: string, name: string, panes: SketchPane[]) => {
     if (!agent) {
       throw new Error('Not authenticated');
     }
 
     await updateSketch(agent, uri, {
       name,
-      content,
-      createdAt: new Date().toISOString(),
+      panes,
+      visibility: 'public',
     });
 
     await refreshSketches();

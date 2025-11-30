@@ -11,6 +11,32 @@ export const DEFAULT_PDS_SERVICES = [
 
 export const SKETCH_COLLECTION = 'cc.hocket.sketch';
 
+// Sketch record types matching the lexicon schema
+export interface SketchPane {
+  target: string;
+  content: string;
+  order?: number;
+}
+
+export interface SketchRecord {
+  $type?: string;
+  name: string;
+  description?: string;
+  panes: SketchPane[];
+  tags?: string[];
+  visibility?: 'public' | 'private';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SketchInput {
+  name: string;
+  description?: string;
+  panes: SketchPane[];
+  tags?: string[];
+  visibility?: 'public' | 'private';
+}
+
 export async function createAgent(service: string): Promise<BskyAgent> {
   const agent = new BskyAgent({ service });
   return agent;
@@ -49,32 +75,38 @@ export async function listSketches(agent: BskyAgent, did: string) {
   return response.data.records;
 }
 
-export async function getSketch(agent: BskyAgent, uri: string) {
+export async function getSketch(agent: BskyAgent, uri: string): Promise<{ uri: string; cid: string; value: SketchRecord }> {
   const response = await agent.com.atproto.repo.getRecord({
     repo: uri.split('/')[2],
     collection: SKETCH_COLLECTION,
     rkey: uri.split('/')[4],
   });
 
-  return response.data;
+  return response.data as unknown as { uri: string; cid: string; value: SketchRecord };
 }
 
 export async function createSketch(
   agent: BskyAgent,
   did: string,
-  sketch: {
-    name: string;
-    content: string;
-    createdAt?: string;
-  }
+  sketch: SketchInput
 ) {
+  const now = new Date().toISOString();
   const response = await agent.com.atproto.repo.createRecord({
     repo: did,
     collection: SKETCH_COLLECTION,
     record: {
+      $type: SKETCH_COLLECTION,
       name: sketch.name,
-      content: sketch.content,
-      createdAt: sketch.createdAt || new Date().toISOString(),
+      description: sketch.description,
+      panes: sketch.panes.map((pane, index) => ({
+        target: pane.target,
+        content: pane.content,
+        order: pane.order ?? index,
+      })),
+      tags: sketch.tags,
+      visibility: sketch.visibility || 'public',
+      createdAt: now,
+      updatedAt: now,
     },
   });
 
@@ -84,24 +116,32 @@ export async function createSketch(
 export async function updateSketch(
   agent: BskyAgent,
   uri: string,
-  sketch: {
-    name: string;
-    content: string;
-    createdAt?: string;
-  }
+  sketch: SketchInput
 ) {
   const parts = uri.split('/');
   const repo = parts[2];
   const rkey = parts[4];
 
+  // Get existing record to preserve createdAt
+  const existing = await getSketch(agent, uri);
+  
   const response = await agent.com.atproto.repo.putRecord({
     repo,
     collection: SKETCH_COLLECTION,
     rkey,
     record: {
+      $type: SKETCH_COLLECTION,
       name: sketch.name,
-      content: sketch.content,
-      createdAt: sketch.createdAt || new Date().toISOString(),
+      description: sketch.description,
+      panes: sketch.panes.map((pane, index) => ({
+        target: pane.target,
+        content: pane.content,
+        order: pane.order ?? index,
+      })),
+      tags: sketch.tags,
+      visibility: sketch.visibility || 'public',
+      createdAt: existing.value.createdAt,
+      updatedAt: new Date().toISOString(),
     },
   });
 
