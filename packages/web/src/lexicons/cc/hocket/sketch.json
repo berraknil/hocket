@@ -1,0 +1,86 @@
+{
+  "lexicon": 1,
+  "id": "cc.hocket.sketch",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A Hocket live coding sketch with multiple panes for collaborative audiovisual performance",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "panes", "createdAt"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 256,
+            "maxGraphemes": 64,
+            "description": "Name of the sketch"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 300,
+            "description": "Optional description of the sketch"
+          },
+          "panes": {
+            "type": "array",
+            "maxLength": 8,
+            "description": "Array of code panes (max 8)",
+            "items": {
+              "type": "ref",
+              "ref": "#pane"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "maxLength": 10,
+            "description": "Optional tags for categorization",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "visibility": {
+            "type": "string",
+            "knownValues": ["public", "private"],
+            "default": "public",
+            "description": "Visibility of the sketch"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the sketch was first created"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the sketch was last updated"
+          }
+        }
+      }
+    },
+    "pane": {
+      "type": "object",
+      "description": "A single code pane within a sketch",
+      "required": ["target", "content"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Target language/runtime (e.g., strudel, hydra)"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 100000,
+          "description": "The code content of this pane"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7,
+          "description": "Display order of the pane (0-7)"
+        }
+      }
+    }
+  }
+}

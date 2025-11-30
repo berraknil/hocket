@@ -22,7 +22,7 @@ import { useQuery } from "@/hooks/use-query";
 import { useShortcut } from "@/hooks/use-shortcut";
 import { useStrudelCodemirrorExtensions } from "@/hooks/use-strudel-codemirror-extensions";
 import { useToast } from "@/hooks/use-toast";
-import { getSketch, createSketch, updateSketch } from "@/lib/atproto";
+import { getSketch, createSketch, updateSketch, SketchRecord, SketchPane } from "@/lib/atproto";
 import {
   DisplaySettings,
   defaultDisplaySettings,
@@ -224,16 +224,40 @@ function SessionContent() {
     const loadSketch = async () => {
       try {
         const record = await getSketch(agent, sketchUri);
-        const sketchData = record.value as { name: string; content: string };
+        const sketchData = record.value as SketchRecord;
         
         setCurrentSketchUri(sketchUri);
         setCurrentSketchName(sketchData.name);
         
-        // Load the content into the first document
-        const docs = session.getDocuments();
-        if (docs.length > 0 && sketchData.content) {
-          docs[0].content = sketchData.content;
+        // Check if sketch has panes array (new format) or content string (old format)
+        if (sketchData.panes && sketchData.panes.length > 0) {
+          // New format: restore panes with correct targets
+          const sortedPanes = [...sketchData.panes].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          
+          // Set active documents with targets from sketch
+          session.setActiveDocuments(
+            sortedPanes.map((pane, i) => ({
+              id: String(i + 1),
+              target: pane.target,
+            }))
+          );
+          
+          // Wait for Yjs to create documents, then set content
+          setTimeout(() => {
+            const docs = session.getDocuments();
+            sortedPanes.forEach((pane, i) => {
+              if (docs[i]) {
+                docs[i].content = pane.content;
+              }
+            });
+          }, 150);
         }
+        
+        toast({
+          title: "Sketch loaded",
+          description: `"${sketchData.name}" loaded successfully`,
+          duration: 3000,
+        });
       } catch (error) {
         console.error("Failed to load sketch:", error);
         toast({
@@ -649,23 +673,27 @@ function SessionContent() {
       throw new Error("Not authenticated");
     }
 
-    // Combine all document contents
-    const allContent = documents
-      .map((doc) => `// Target: ${doc.target}\n${doc.content}`)
-      .join("\n\n---\n\n");
+    // Create panes array from documents
+    const panes: SketchPane[] = documents.map((doc, index) => ({
+      target: doc.target,
+      content: doc.content,
+      order: index,
+    }));
 
     if (currentSketchUri) {
       // Update existing sketch
       await updateSketch(agent, currentSketchUri, {
         name: sketchName,
-        content: allContent,
+        panes,
+        visibility: 'public',
       });
       setCurrentSketchName(sketchName);
     } else {
       // Create new sketch
       const result = await createSketch(agent, authSession.did, {
         name: sketchName,
-        content: allContent,
+        panes,
+        visibility: 'public',
       });
       setCurrentSketchUri(result.uri);
       setCurrentSketchName(sketchName);
