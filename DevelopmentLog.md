@@ -1,5 +1,19 @@
 # Development Log
 
+## 2025-11-30: Update Hero Section Tagline and Typography
+
+### Changes
+- Changed tagline from "ALGORAVE but make it online" to "ALGORAVE in the ATmosphere"
+- Reduced ALGORAVE font-size by 15% (from `clamp(3rem,12vw,9rem)` to `clamp(2.55rem,10.2vw,7.65rem)`)
+
+### Files Modified
+- `packages/web/src/components/landing/hero-section.tsx`
+
+### Testing
+- Build passes ✅
+
+---
+
 ## 2025-11-30: Fix Verify Script for Dockerfile Checks
 
 ### Problem

@@ -46,12 +46,12 @@ export function HeroSection() {
 
               {/* Large sculptural text */}
               <h1 className="relative">
-                <div className="text-[clamp(3rem,12vw,9rem)] font-extralight leading-[0.9] tracking-[-0.02em] text-stone-900">
+                <div className="text-[clamp(2.55rem,10.2vw,7.65rem)] font-extralight leading-[0.9] tracking-[-0.02em] text-stone-900">
                   ALGORAVE
                 </div>
                 <div className="text-[clamp(2rem,8vw,6rem)] font-light leading-[0.9] tracking-[-0.01em] text-stone-600 mt-2">
-                  but make it{" "}
-                  <span className="italic text-stone-900">online</span>
+                  in the{" "}
+                  <span className="italic text-stone-900">ATmosphere</span>
                 </div>
               </h1>
 
