@@ -4,7 +4,6 @@ import {
   SessionData,
   loginWithAppPassword,
   resumeSession,
-  createAgent,
 } from "../lib/atproto";
 
 interface AuthContextType {
@@ -34,24 +33,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const storedSession = localStorage.getItem(SESSION_STORAGE_KEY);
+    console.log("AuthProvider: checking stored session", {
+      hasStoredSession: !!storedSession,
+    });
+
     if (storedSession) {
       try {
         const parsedSession: SessionData = JSON.parse(storedSession);
+        console.log("AuthProvider: parsed session", {
+          did: parsedSession.did,
+          handle: parsedSession.handle,
+          service: parsedSession.service,
+        });
+
         resumeSession(parsedSession)
           .then((resumedAgent) => {
+            console.log("AuthProvider: session resumed successfully");
             setSession(parsedSession);
             setAgent(resumedAgent);
           })
-          .catch(async () => {
-            // If resume fails but we have session data, create agent without validation
-            // This allows offline mode and graceful degradation
-            try {
-              const offlineAgent = await createAgent(parsedSession.service);
-              setSession(parsedSession);
-              setAgent(offlineAgent);
-            } catch {
-              localStorage.removeItem(SESSION_STORAGE_KEY);
-            }
+          .catch(async (error) => {
+            console.error("AuthProvider: Failed to resume session:", error);
+            // Session resume failed - clear and require re-login
+            localStorage.removeItem(SESSION_STORAGE_KEY);
+            setSession(null);
+            setAgent(null);
           })
           .finally(() => {
             setIsLoading(false);

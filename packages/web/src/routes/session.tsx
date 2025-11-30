@@ -546,6 +546,17 @@ function SessionContent() {
   // Auto-save: Initialize sketch on PDS for authenticated users
   // This runs once when the session is ready and user is authenticated
   useEffect(() => {
+    console.log("Auto-save effect running:", {
+      autoSaveInitialized: autoSaveInitialized.current,
+      authLoading,
+      isAuthenticated,
+      hasAgent: !!agent,
+      hasAuthSession: !!authSession,
+      authSessionDid: authSession?.did,
+      hasSession: !!session,
+      documentsLength: documents.length,
+    });
+
     // Skip if already initialized, not authenticated, or loading from existing sketch
     if (autoSaveInitialized.current) return;
     if (authLoading || !isAuthenticated || !agent || !authSession) return;
@@ -843,8 +854,18 @@ function SessionContent() {
   // Save sketch to ATproto
   const handleSaveSketch = useCallback(
     async (sketchName: string) => {
+      console.log("handleSaveSketch called with:", {
+        agent: !!agent,
+        authSession: !!authSession,
+        authSessionDid: authSession?.did,
+        session: !!session,
+        isAuthenticated,
+      });
+
       if (!agent || !authSession || !session) {
-        throw new Error("Not authenticated");
+        throw new Error(
+          `Authentication Required: agent=${!!agent}, authSession=${!!authSession}, session=${!!session}`,
+        );
       }
 
       // Create panes array from documents
