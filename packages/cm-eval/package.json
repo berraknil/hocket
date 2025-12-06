@@ -25,12 +25,12 @@
     "debug": "^4.3.4"
   },
   "devDependencies": {
-    "@types/debug": "^4.1.7",
-    "@types/lodash": "^4.14.191",
-    "@types/node": "^18.14.6",
-    "@types/uuid": "^9.0.1",
+    "@types/debug": "^4.1.12",
+    "@types/lodash": "^4.17.13",
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
     "prettier": "^3.4.2",
-    "typescript": "^4.9.4"
+    "typescript": "^5.7.2"
   },
   "peerDependencies": {
     "@codemirror/commands": "^6.2.2",

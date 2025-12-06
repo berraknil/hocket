@@ -10,10 +10,10 @@ import { forEachDocumentContext } from "@/lib/utils";
 
 export function useStrudelCodemirrorExtensions(
   session: Session | null,
-  editorRefs: React.RefObject<ReactCodeMirrorRef>[],
+  editorRefs: React.RefObject<ReactCodeMirrorRef | null>[],
 ) {
   useAnimationFrame(
-    useCallback(() => {
+    useCallback((_timestamp: number) => {
       if (!session) return;
 
       forEachDocumentContext(

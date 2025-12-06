@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "prettier": "^3.4.2",
-    "vite": "^5.0.12"
+    "vite": "^7.2.6"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.1.4",

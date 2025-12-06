@@ -5,7 +5,7 @@ import { DisplaySettings } from "@/lib/display-settings";
 interface PunctualCanvasProps {
   fullscreen?: boolean;
   displaySettings: DisplaySettings;
-  ref: React.RefObject<HTMLCanvasElement>;
+  ref: React.RefObject<HTMLCanvasElement | null>;
 }
 
 const PunctualCanvas = ({

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 
 export function useAnimationFrame(callback: (timestamp: number) => void) {
-  const requestId = useRef<number>();
+  const requestId = useRef<number | undefined>(undefined);
 
   const animate = useCallback(
     (timestamp: number) => {
@@ -15,7 +15,9 @@ export function useAnimationFrame(callback: (timestamp: number) => void) {
     requestId.current = requestAnimationFrame(animate);
 
     return () => {
-      cancelAnimationFrame(requestId.current!);
+      if (requestId.current !== undefined) {
+        cancelAnimationFrame(requestId.current);
+      }
     };
   }, [animate]);
 }

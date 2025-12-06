@@ -130,7 +130,7 @@ export interface EditorProps extends ReactCodeMirrorProps {
   document?: Document;
   extensionSettings?: any;
   settings?: EditorSettings;
-  ref: React.RefObject<ReactCodeMirrorRef>;
+  ref?: React.RefObject<ReactCodeMirrorRef | null>;
 }
 
 export const Editor = ({ document, settings, ref, ...props }: EditorProps) => {

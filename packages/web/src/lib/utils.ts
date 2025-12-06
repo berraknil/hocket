@@ -107,7 +107,7 @@ export function updateDocumentsContext(docId: string, context: object) {
 export function forEachDocumentContext(
   callback: (context: any, editor: ReactCodeMirrorRef | null) => void,
   session: Session,
-  editorRefs: React.RefObject<ReactCodeMirrorRef>[],
+  editorRefs: React.RefObject<ReactCodeMirrorRef | null>[],
 ) {
   const documentsContext = window.documentsContext || {};
   for (const docId in documentsContext) {
